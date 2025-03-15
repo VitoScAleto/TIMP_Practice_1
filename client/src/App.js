@@ -1,34 +1,44 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom"; // Импортируем BrowserRouter и Routes
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import SafetyMeasures from "./components/SafetyMeasures";
 import Training from "./components/Training";
 import Resources from "./components/Resources";
 import Feedback from "./components/Feedback";
-import Login from "./components/Login";
-import Register from "./components/Register";
+import AuthPage from "./components/AuthPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+
   return (
     <BrowserRouter>
-      {" "}
-      {/* Используем BrowserRouter */}
-      <Navbar /> {/* Navbar будет отображаться на всех страницах */}
+      <Navbar />
       <Routes>
-        {" "}
-        {/* Используем Routes вместо Switch */}
-        <Route path="/" element={<HomePage />} />{" "}
-        {/* Используем element вместо component */}
+        {/* Главная страница */}
+        <Route
+          path="/"
+          element={isAuthenticated ? <HomePage /> : <Navigate to="/auth" />}
+        />
+        {/* Другие страницы */}
         <Route path="/safety-measures" element={<SafetyMeasures />} />
         <Route path="/training" element={<Training />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/feedback" element={<Feedback />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        {/* Страница авторизации */}
+        <Route
+          path="/auth"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" /> // Перенаправляем на главную, если пользователь аутентифицирован
+            ) : (
+              <AuthPage setIsAuthenticated={setIsAuthenticated} />
+            )
+          }
+        />
       </Routes>
-      <Footer /> {/* Footer будет отображаться на всех страницах */}
+      <Footer />
     </BrowserRouter>
   );
 }

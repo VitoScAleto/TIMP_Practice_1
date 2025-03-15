@@ -24,12 +24,6 @@ const Navbar = () => {
         <Button color="inherit" component={Link} to="/feedback">
           Обратная связь
         </Button>
-        <Button color="inherit" component={Link} to="/login">
-          Вход
-        </Button>
-        <Button color="inherit" component={Link} to="/register">
-          Регистрация
-        </Button>
       </Toolbar>
     </AppBar>
   );

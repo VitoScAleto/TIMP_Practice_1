@@ -1,15 +1,31 @@
 import React, { useState } from "react";
 import { Typography, Container, TextField, Button } from "@mui/material";
-import axios from "axios";
+import api from "../api";
 
-const Register = () => {
+const Register = ({ setIsAuthenticated }) => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await axios.post("/api/register", { email, password });
-    console.log(response.data);
+    if (password !== confirmPassword) {
+      alert("Пароли не совпадают");
+      return;
+    }
+    try {
+      const response = await api.post("auth/register", {
+        name,
+        email,
+        password,
+      });
+      if (response.data.success) {
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -19,9 +35,16 @@ const Register = () => {
       </Typography>
       <form onSubmit={handleSubmit}>
         <TextField
+          label="Имя"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
           label="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
           fullWidth
           margin="normal"
         />
@@ -29,7 +52,19 @@ const Register = () => {
           label="Пароль"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) =>
+            setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+          }
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Подтверждение пароля"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) =>
+            setConfirmPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+          }
           fullWidth
           margin="normal"
         />

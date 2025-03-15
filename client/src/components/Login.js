@@ -1,19 +1,25 @@
 import React, { useState } from "react";
-import { Typography, Container, TextField, Button } from "@mui/material";
-import axios from "axios";
+import { Typography, TextField, Button } from "@mui/material";
+import api from "../api";
 
-const Login = () => {
+const Login = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await axios.post("/api/login", { email, password });
-    console.log(response.data);
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      if (response.data.success) {
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
-    <Container>
+    <div>
       <Typography variant="h4" gutterBottom>
         Вход
       </Typography>
@@ -21,7 +27,7 @@ const Login = () => {
         <TextField
           label="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
           fullWidth
           margin="normal"
         />
@@ -29,7 +35,9 @@ const Login = () => {
           label="Пароль"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) =>
+            setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+          }
           fullWidth
           margin="normal"
         />
@@ -37,7 +45,7 @@ const Login = () => {
           Войти
         </Button>
       </form>
-    </Container>
+    </div>
   );
 };
 
