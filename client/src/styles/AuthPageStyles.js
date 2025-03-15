@@ -4,7 +4,6 @@ export const authPageStyles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #6a11cb, #2575fc)", // Градиентный фон
   },
   paper: {
     padding: "20px",

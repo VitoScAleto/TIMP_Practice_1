@@ -11,10 +11,10 @@ export const AuthPageBackground = () => {
         width: "100%",
         height: "100%",
         zIndex: -1,
-        backgroundImage: "url('../public/images/backForAuth.jpg')", // Укажите путь к изображению
+        backgroundImage: "url('/public/../../images/backForAuth.jpg')", // Укажите путь к изображению
         backgroundSize: "cover",
         backgroundPosition: "center",
-        opacity: 0.7, // Прозрачность фона
+        opacity: 1, // Прозрачность фона
       }}
     />
   );
