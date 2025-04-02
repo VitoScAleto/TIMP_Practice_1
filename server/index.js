@@ -6,54 +6,57 @@ const fs = require("fs").promises;
 const path = require("path");
 const app = express();
 const cors = require("cors");
-//const { default: Feedback } = require("../client/src/components/Feedback");
-app.use(cors());
 
-app.use(bodyParser.json()); // Add this line to parse JSON requests
+app.use(cors());
+app.use(bodyParser.json());
+
+app.use(express.static(path.join(__dirname, "../client/build")));
+
+const PORT = process.env.PORT || 5000;
 
 const USERS_JSON_PATH = path.join(
-  "/home/pushk/VSCODE/TIMP/TIMP_Practice_1/client/JSON_date",
+  __dirname,
+  "../client/JSON_date",
   "users.json"
 );
 const FEEDBACK_JSON_PATH = path.join(
-  "/home/pushk/VSCODE/TIMP/TIMP_Practice_1/client/JSON_date",
+  __dirname,
+  "../client/JSON_date",
   "feedback.json"
 );
 
 const pool = new Pool({
-  user: "postgres",
-  host: "Localhost",
-  database: "TIMP_Practice_1",
-  password: "0000",
-  port: 5432,
+  user: process.env.DB_USER || "postgres",
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_NAME || "TIMP_Practice_1",
+  password: process.env.DB_PASSWORD || "0000",
+  port: process.env.DB_PORT || 5432,
 });
 
 async function initializeJsonFiles() {
   try {
     await fs.access(USERS_JSON_PATH);
-    // Verify file has valid JSON content
+
     const content = await fs.readFile(USERS_JSON_PATH, "utf8");
     if (!content.trim()) {
       await fs.writeFile(USERS_JSON_PATH, JSON.stringify([]));
     } else {
-      JSON.parse(content); // Test parsing
+      JSON.parse(content);
     }
   } catch (err) {
-    // If file doesn't exist or has invalid JSON, create fresh
     await fs.writeFile(USERS_JSON_PATH, JSON.stringify([]));
   }
 
   try {
     await fs.access(FEEDBACK_JSON_PATH);
-    // Verify file has valid JSON content
+
     const content = await fs.readFile(FEEDBACK_JSON_PATH, "utf8");
     if (!content.trim()) {
       await fs.writeFile(FEEDBACK_JSON_PATH, JSON.stringify([]));
     } else {
-      JSON.parse(content); // Test parsing
+      JSON.parse(content);
     }
   } catch (err) {
-    // If file doesn't exist or has invalid JSON, create fresh
     await fs.writeFile(FEEDBACK_JSON_PATH, JSON.stringify([]));
   }
 }
@@ -100,7 +103,7 @@ app.post("/api/json/auth/register", async (req, res) => {
   console.log("JSON Registration request received");
   console.log(USERS_JSON_PATH);
   console.log(FEEDBACK_JSON_PATH);
-  console.log("Request body:", req.body); // Добавим лог для отладки
+  console.log("Request body:", req.body);
 
   try {
     const { name, email, password } = req.body;
@@ -109,7 +112,7 @@ app.post("/api/json/auth/register", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
-        receivedData: req.body, // Добавим полученные данные в ответ для отладки
+        receivedData: req.body,
       });
     }
 
@@ -291,11 +294,11 @@ app.post("/api/feedback", async (req, res) => {
   }
 });
 
-app.listen(5000, () => {
-  console.log("Server is running on port 5000");
-});
-
 app.get("/api/test", (req, res) => {
   console.log("Test route hit");
   res.json({ message: "Server is working!" });
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Сервер запущен на порту ${PORT}`);
 });
