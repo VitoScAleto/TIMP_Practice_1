@@ -2,9 +2,23 @@ const express = require("express");
 const { Pool } = require("pg");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
+const fs = require("fs").promises;
+const path = require("path");
 const app = express();
 const cors = require("cors");
+//const { default: Feedback } = require("../client/src/components/Feedback");
 app.use(cors());
+
+app.use(bodyParser.json()); // Add this line to parse JSON requests
+
+const USERS_JSON_PATH = path.join(
+  "/home/pushk/VSCODE/TIMP/TIMP_Practice_1/client/JSON_date",
+  "users.json"
+);
+const FEEDBACK_JSON_PATH = path.join(
+  "/home/pushk/VSCODE/TIMP/TIMP_Practice_1/client/JSON_date",
+  "feedback.json"
+);
 
 const pool = new Pool({
   user: "postgres",
@@ -12,6 +26,176 @@ const pool = new Pool({
   database: "TIMP_Practice_1",
   password: "0000",
   port: 5432,
+});
+
+async function initializeJsonFiles() {
+  try {
+    await fs.access(USERS_JSON_PATH);
+    // Verify file has valid JSON content
+    const content = await fs.readFile(USERS_JSON_PATH, "utf8");
+    if (!content.trim()) {
+      await fs.writeFile(USERS_JSON_PATH, JSON.stringify([]));
+    } else {
+      JSON.parse(content); // Test parsing
+    }
+  } catch (err) {
+    // If file doesn't exist or has invalid JSON, create fresh
+    await fs.writeFile(USERS_JSON_PATH, JSON.stringify([]));
+  }
+
+  try {
+    await fs.access(FEEDBACK_JSON_PATH);
+    // Verify file has valid JSON content
+    const content = await fs.readFile(FEEDBACK_JSON_PATH, "utf8");
+    if (!content.trim()) {
+      await fs.writeFile(FEEDBACK_JSON_PATH, JSON.stringify([]));
+    } else {
+      JSON.parse(content); // Test parsing
+    }
+  } catch (err) {
+    // If file doesn't exist or has invalid JSON, create fresh
+    await fs.writeFile(FEEDBACK_JSON_PATH, JSON.stringify([]));
+  }
+}
+
+initializeJsonFiles();
+
+// Функции для работы с JSON
+
+// Users
+async function getUsersFromJson() {
+  const data = await fs.readFile(USERS_JSON_PATH, "utf8");
+  return JSON.parse(data);
+}
+
+async function saveUserToJson(user) {
+  const users = await getUsersFromJson();
+  users.push(user);
+  await fs.writeFile(USERS_JSON_PATH, JSON.stringify(users, null, 2));
+  return user;
+}
+
+async function findUserByEmailInJson(email) {
+  const users = await getUsersFromJson();
+  return users.find((u) => u.email === email);
+}
+
+// Feedback
+async function getFeedbackFromJson() {
+  const data = await fs.readFile(FEEDBACK_JSON_PATH, "utf8");
+  return JSON.parse(data);
+}
+
+async function saveFeedbackToJson(feedback) {
+  const feedbackList = await getFeedbackFromJson();
+  feedbackList.push(feedback);
+  await fs.writeFile(FEEDBACK_JSON_PATH, JSON.stringify(feedbackList, null, 2));
+  return feedback;
+}
+
+// Маршруты для работы с JSON
+
+// Регистрация (JSON)
+app.post("/api/json/auth/register", async (req, res) => {
+  console.log("JSON Registration request received");
+  console.log(USERS_JSON_PATH);
+  console.log(FEEDBACK_JSON_PATH);
+  console.log("Request body:", req.body); // Добавим лог для отладки
+
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+        receivedData: req.body, // Добавим полученные данные в ответ для отладки
+      });
+    }
+
+    const existingUser = await findUserByEmailInJson(email);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = {
+      id: Date.now(),
+      name,
+      email,
+      password: hashedPassword,
+    };
+
+    await saveUserToJson(user);
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("Error during JSON registration:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+});
+
+// Вход (JSON)
+app.post("/api/json/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await findUserByEmailInJson(email);
+    if (user) {
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (validPassword) {
+        res.json({ success: true, user });
+      } else {
+        res.status(400).json({ success: false, message: "Неверный пароль" });
+      }
+    } else {
+      res
+        .status(404)
+        .json({ success: false, message: "Пользователь не найден" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Получение отзывов (JSON)
+app.get("/api/json/feedback", async (req, res) => {
+  try {
+    const feedback = await getFeedbackFromJson();
+    res.json(feedback);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// Добавление отзыва (JSON)
+app.post("/api/json/feedback", async (req, res) => {
+  const { message } = req.body;
+  if (!message) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Message is required" });
+  }
+
+  try {
+    const feedback = {
+      id: Date.now(),
+      message,
+      createdAt: new Date().toISOString(),
+    };
+    await saveFeedbackToJson(feedback);
+    res.json(feedback);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
 pool.query("SELECT NOW()", (err, res) => {
@@ -25,8 +209,6 @@ pool.query("SELECT NOW()", (err, res) => {
     );
   }
 });
-
-app.use(bodyParser.json());
 
 // Маршрут для регистрации
 app.post("/api/auth/register", async (req, res) => {

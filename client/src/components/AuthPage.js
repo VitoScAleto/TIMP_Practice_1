@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { Tabs, Tab, Paper, Grid, Fade } from "@mui/material";
 import Login from "./Login";
 import Register from "./Register";
-import { authPageStyles } from "../styles/AuthPageStyles"; // Импорт стилей
-import { AuthPageBackground } from "../styles/AuthPageGraphics"; // Импорт фона
+import { authPageStyles } from "../styles/AuthPageStyles";
+import { AuthPageBackground } from "../styles/AuthPageGraphics";
 
 const AuthPage = ({ setIsAuthenticated }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -14,12 +14,12 @@ const AuthPage = ({ setIsAuthenticated }) => {
 
   return (
     <>
-      <AuthPageBackground /> {/* Добавление фонового изображения */}
+      <AuthPageBackground /> {}
       <Grid
         container
         justifyContent="center"
         alignItems="center"
-        sx={authPageStyles.container} // Использование стилей
+        sx={authPageStyles.container}
       >
         <Grid item xs={12} sm={8} md={6} lg={4}>
           <Paper elevation={3} sx={authPageStyles.paper}>

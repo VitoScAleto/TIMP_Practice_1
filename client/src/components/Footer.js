@@ -7,7 +7,7 @@ const Footer = () => {
       style={{ marginTop: "2rem", padding: "1rem", textAlign: "center" }}
     >
       <Typography variant="body2" color="textSecondary">
-        © 2023 Спортивные сооружения. Все права защищены.
+        © 2025 Спортивные сооружения. Все права защищены.
       </Typography>
     </Container>
   );

@@ -15,7 +15,7 @@ const Register = ({ setIsAuthenticated }) => {
       return;
     }
     try {
-      const response = await api.post("auth/register", {
+      const response = await api.post("json/auth/register", {
         name,
         email,
         password,

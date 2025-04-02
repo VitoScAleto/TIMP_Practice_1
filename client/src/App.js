@@ -12,9 +12,13 @@ import Footer from "./components/Footer";
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+  };
+
   return (
     <BrowserRouter>
-      <Navbar />
+      <Navbar isAuthenticated={isAuthenticated} onLogout={handleLogout} />
       <Routes>
         {/* Главная страница */}
         <Route
@@ -31,7 +35,7 @@ function App() {
           path="/auth"
           element={
             isAuthenticated ? (
-              <Navigate to="/" /> // Перенаправляем на главную, если пользователь аутентифицирован
+              <Navigate to="/" />
             ) : (
               <AuthPage setIsAuthenticated={setIsAuthenticated} />
             )

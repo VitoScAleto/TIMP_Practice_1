@@ -9,7 +9,7 @@ const Login = ({ setIsAuthenticated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/json/auth/login", { email, password });
       if (response.data.success) {
         setIsAuthenticated(true);
       }

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 import {
   Typography,
   Container,
@@ -8,17 +9,35 @@ import {
   ListItem,
   ListItemText,
 } from "@mui/material";
-import axios from "axios";
+import api from "../api";
 
 const Feedback = () => {
   const [message, setMessage] = useState("");
   const [feedbackList, setFeedbackList] = useState([]);
 
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        const response = await api.get("/json/feedback");
+        setFeedbackList(response.data);
+      } catch (error) {
+        console.error("Error fetching feedback:", error);
+      }
+    };
+    fetchFeedback();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const response = await axios.post("/api/feedback", { message });
-    setFeedbackList([...feedbackList, response.data]);
-    setMessage("");
+    if (!message.trim()) return;
+
+    try {
+      const response = await api.post("/json/feedback", { message });
+      setFeedbackList([...feedbackList, response.data]);
+      setMessage("");
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+    }
   };
 
   return (
@@ -39,9 +58,12 @@ const Feedback = () => {
         </Button>
       </form>
       <List>
-        {feedbackList.map((feedback, index) => (
-          <ListItem key={index}>
-            <ListItemText primary={feedback.message} />
+        {feedbackList.map((feedback) => (
+          <ListItem key={feedback.id}>
+            <ListItemText
+              primary={feedback.message}
+              secondary={new Date(feedback.createdAt).toLocaleString()}
+            />
           </ListItem>
         ))}
       </List>

@@ -20,7 +20,6 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { safetyMeasuresText } from "../Text/SafetyMeasuresText";
 
-// Стилизованные компоненты
 const StyledContainer = styled(Container)(({ theme }) => ({
   padding: theme.spacing(4),
   backgroundColor: "#f5f5f5",
