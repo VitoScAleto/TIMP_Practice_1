@@ -1,3 +1,4 @@
+const config = require("../server/configServer.json");
 const express = require("express");
 const { Pool } = require("pg");
 const bodyParser = require("body-parser");
@@ -299,6 +300,6 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "Server is working!" });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, config.listenIP, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
 });

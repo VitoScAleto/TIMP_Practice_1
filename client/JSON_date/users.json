@@ -16,5 +16,11 @@
     "name": "12",
     "email": "12",
     "password": "$2b$10$Wp2bIYNgiDM93ZoNQlNIqu4yrfTfCWVXT43HRaTcDuFgc07oVd4Je"
+  },
+  {
+    "id": 1744183701001,
+    "name": "Виталий",
+    "email": "ddd",
+    "password": "$2b$10$ENlZ0wnp/ttFUIOhLFkrvuSmPcXeE33LOTW8RP/CvOFRzy1.dbIGi"
   }
 ]

@@ -1,7 +1,8 @@
 import axios from "axios";
+import config from "../src/configClient.json";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api", // Укажите URL вашего сервера
+  baseURL: config.UrlApi, // Укажите URL вашего сервера
 });
 
 export default api;
