@@ -5,7 +5,7 @@ import Register from "./Register";
 import { authPageStyles } from "../styles/AuthPageStyles";
 import { AuthPageBackground } from "../styles/AuthPageGraphics";
 
-const AuthPage = ({ setIsAuthenticated }) => {
+const AuthPage = ({ setIsAuthenticated, setUser }) => {
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabChange = (event, newValue) => {
@@ -14,7 +14,7 @@ const AuthPage = ({ setIsAuthenticated }) => {
 
   return (
     <>
-      <AuthPageBackground /> {}
+      <AuthPageBackground />
       <Grid
         container
         justifyContent="center"
@@ -37,14 +37,20 @@ const AuthPage = ({ setIsAuthenticated }) => {
             <Fade in={activeTab === 0} timeout={300}>
               <div>
                 {activeTab === 0 && (
-                  <Login setIsAuthenticated={setIsAuthenticated} />
+                  <Login
+                    setIsAuthenticated={setIsAuthenticated}
+                    setUser={setUser}
+                  />
                 )}
               </div>
             </Fade>
             <Fade in={activeTab === 1} timeout={300}>
               <div>
                 {activeTab === 1 && (
-                  <Register setIsAuthenticated={setIsAuthenticated} />
+                  <Register
+                    setIsAuthenticated={setIsAuthenticated}
+                    setUser={setUser}
+                  />
                 )}
               </div>
             </Fade>

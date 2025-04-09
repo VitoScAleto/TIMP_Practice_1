@@ -1,4 +1,5 @@
 import React from "react";
+import { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import SafetyMeasures from "./components/SafetyMeasures";
@@ -10,34 +11,41 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
 
   const handleLogout = () => {
     setIsAuthenticated(false);
+    setUser(null); // Очистим пользователя при выходе
   };
 
   return (
     <BrowserRouter>
       <Navbar isAuthenticated={isAuthenticated} onLogout={handleLogout} />
       <Routes>
-        {/* Главная страница */}
         <Route
           path="/"
           element={isAuthenticated ? <HomePage /> : <Navigate to="/auth" />}
         />
-        {/* Другие страницы */}
         <Route path="/safety-measures" element={<SafetyMeasures />} />
         <Route path="/training" element={<Training />} />
         <Route path="/resources" element={<Resources />} />
-        <Route path="/feedback" element={<Feedback />} />
-        {/* Страница авторизации */}
+        <Route
+          path="/feedback"
+          element={
+            isAuthenticated ? <Feedback user={user} /> : <Navigate to="/auth" />
+          }
+        />
         <Route
           path="/auth"
           element={
             isAuthenticated ? (
               <Navigate to="/" />
             ) : (
-              <AuthPage setIsAuthenticated={setIsAuthenticated} />
+              <AuthPage
+                setIsAuthenticated={setIsAuthenticated}
+                setUser={setUser}
+              />
             )
           }
         />

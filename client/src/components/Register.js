@@ -10,7 +10,7 @@ import {
 import { styles } from "../styles/RegisterStyle";
 import api from "../api";
 
-const Register = ({ setIsAuthenticated }) => {
+const Register = ({ setIsAuthenticated, setUser }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,6 +56,7 @@ const Register = ({ setIsAuthenticated }) => {
       });
       if (response.data.success) {
         setIsAuthenticated(true);
+        setUser(response.data.user);
       }
     } catch (error) {
       console.error(error);

@@ -1,26 +1,20 @@
 [
   {
-    "id": 1743584843696,
+    "id": 1744213364730,
     "name": "1",
     "email": "1",
-    "password": "$2b$10$QptpX9skPzaO4C/pN2gmVeguzloWSOQMNJw5Ft4GMBWLHiNUVzjfi"
+    "password": "$2b$10$1B./HikAWXumze3omAUGZOk7ej4vudKF6sB.7dNuMb12vSjpPTL1q"
   },
   {
-    "id": 1743585117726,
-    "name": "Виталий",
-    "email": "push@gmail.com",
-    "password": "$2b$10$OdZSV2N8zA1vKpERqgXUWe8dI509793QRxCV2PquEDXVJ8vd0LG2W"
+    "id": 1744213732645,
+    "name": "2",
+    "email": "2",
+    "password": "$2b$10$c2oqZPuts2DpIRFFAPMUIOhtkV1JWbttC2oVUg0N8R55L9jFUYSqq"
   },
   {
-    "id": 1743589770911,
-    "name": "12",
-    "email": "12",
-    "password": "$2b$10$Wp2bIYNgiDM93ZoNQlNIqu4yrfTfCWVXT43HRaTcDuFgc07oVd4Je"
-  },
-  {
-    "id": 1744183701001,
-    "name": "Виталий",
-    "email": "ddd",
-    "password": "$2b$10$ENlZ0wnp/ttFUIOhLFkrvuSmPcXeE33LOTW8RP/CvOFRzy1.dbIGi"
+    "id": 1744213791257,
+    "name": "5",
+    "email": "5",
+    "password": "$2b$10$ka9GYOvLtk.d77uVLr8OOuxEbXPEk/0ufOicPrXLp9eCOOlJfdFLm"
   }
 ]

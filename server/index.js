@@ -179,18 +179,20 @@ app.get("/api/json/feedback", async (req, res) => {
   }
 });
 
-// Добавление отзыва (JSON)
 app.post("/api/json/feedback", async (req, res) => {
-  const { message } = req.body;
-  if (!message) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Message is required" });
+  const { message, userId } = req.body;
+
+  if (!message || !userId) {
+    return res.status(400).json({
+      success: false,
+      message: "Message and userId are required",
+    });
   }
 
   try {
     const feedback = {
       id: Date.now(),
+      userId,
       message,
       createdAt: new Date().toISOString(),
     };
@@ -199,6 +201,34 @@ app.post("/api/json/feedback", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
+  }
+});
+
+app.delete("/api/json/feedback/:id", async (req, res) => {
+  const feedbackId = parseInt(req.params.id, 10);
+
+  if (isNaN(feedbackId)) {
+    return res.status(400).json({ success: false, message: "Invalid ID" });
+  }
+
+  try {
+    const feedbackList = await getFeedbackFromJson();
+    const newFeedbackList = feedbackList.filter((fb) => fb.id !== feedbackId);
+
+    if (newFeedbackList.length === feedbackList.length) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Feedback not found" });
+    }
+
+    await fs.writeFile(
+      FEEDBACK_JSON_PATH,
+      JSON.stringify(newFeedbackList, null, 2)
+    );
+    res.json({ success: true, message: "Feedback deleted" });
+  } catch (err) {
+    console.error("Error deleting feedback:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
