@@ -1,13 +1,12 @@
 import React, { useState } from "react";
-import {
-  Container,
-  Typography,
-  TextField,
-  Button,
-  CircularProgress,
-  Box,
-} from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import api from "../api";
+import {
+  StyledContainer,
+  StyledTypography,
+  StyledTextField,
+  StyledButton,
+} from "../styles/LoginStyles";
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
@@ -60,10 +59,10 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
+    <StyledContainer>
+      <StyledTypography variant="h4" gutterBottom>
         Вход
-      </Typography>
+      </StyledTypography>
       <Box
         component="form"
         onSubmit={handleSubmit}
@@ -79,30 +78,18 @@ const Login = ({ onLogin }) => {
           },
         }}
       >
-        <TextField
+        <StyledTextField
           label="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
           onBlur={() => handleBlur("email")}
           error={errors.email}
           helperText={errors.email && "Это поле обязательно для заполнения"}
-          sx={
-            errors.email
-              ? {
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "red" },
-                    "&:hover fieldset": { borderColor: "red" },
-                  },
-                  "& .MuiFormLabel-root": { color: "red" },
-                  "& .MuiFormHelperText-root": { color: "red" },
-                }
-              : null
-          }
           fullWidth
           required
         />
 
-        <TextField
+        <StyledTextField
           label="Пароль"
           type="password"
           value={password}
@@ -112,23 +99,11 @@ const Login = ({ onLogin }) => {
           onBlur={() => handleBlur("password")}
           error={errors.password}
           helperText={errors.password && "Это поле обязательно для заполнения"}
-          sx={
-            errors.password
-              ? {
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { borderColor: "red" },
-                    "&:hover fieldset": { borderColor: "red" },
-                  },
-                  "& .MuiFormLabel-root": { color: "red" },
-                  "& .MuiFormHelperText-root": { color: "red" },
-                }
-              : null
-          }
           fullWidth
           required
         />
 
-        <Button
+        <StyledButton
           type="submit"
           variant="contained"
           color="primary"
@@ -138,12 +113,19 @@ const Login = ({ onLogin }) => {
           }
           fullWidth
           size="large"
-          sx={{ mt: 2, height: 48 }}
         >
           {isLoading ? "Вход..." : "Войти"}
-        </Button>
+        </StyledButton>
       </Box>
-    </Container>
+      {/* Место для изображений */}
+      <Box sx={{ mt: 4 }}>
+        <img
+          src="path/to/image.jpg"
+          alt="Описание"
+          style={{ width: "100%", borderRadius: "8px" }}
+        />
+      </Box>
+    </StyledContainer>
   );
 };
 

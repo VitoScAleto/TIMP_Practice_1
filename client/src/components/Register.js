@@ -6,6 +6,7 @@ import {
   Button,
   CircularProgress,
   Box,
+  Alert,
 } from "@mui/material";
 import { styles } from "../styles/RegisterStyle";
 import api from "../api";
@@ -22,6 +23,7 @@ const Register = ({ onLogin }) => {
     confirmPassword: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const validate = () => {
     const newErrors = {
@@ -47,6 +49,7 @@ const Register = ({ onLogin }) => {
     }
 
     setIsLoading(true);
+    setErrorMessage(""); // Сброс сообщения об ошибке
 
     try {
       const response = await api.post("json/auth/register", {
@@ -54,11 +57,15 @@ const Register = ({ onLogin }) => {
         email,
         password,
       });
+
       if (response.data.success) {
-        onLogin(response.data.user);
+        onLogin(response.data.user); // Автоматический вход после регистрации
+      } else {
+        setErrorMessage(response.data.message || "Ошибка регистрации");
       }
     } catch (error) {
       console.error(error);
+      setErrorMessage("Произошла ошибка. Пожалуйста, попробуйте еще раз.");
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +83,11 @@ const Register = ({ onLogin }) => {
       <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
         Регистрация
       </Typography>
+      {errorMessage && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {errorMessage}
+        </Alert>
+      )}
       <Box
         component="form"
         onSubmit={handleSubmit}

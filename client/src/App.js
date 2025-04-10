@@ -54,11 +54,13 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Navbar
-        isAuthenticated={isAuthenticated}
-        onLogout={handleLogout}
-        user={user}
-      />
+      {isAuthenticated && (
+        <Navbar
+          isAuthenticated={isAuthenticated}
+          onLogout={handleLogout}
+          user={user}
+        />
+      )}
       <Routes>
         <Route
           path="/"
@@ -120,7 +122,6 @@ function App() {
             )
           }
         />
-        {/* Дополнительные маршруты */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />
