@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import api from "../api";
 
-const Login = ({ setIsAuthenticated, setUser }) => {
+const Login = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({
@@ -43,8 +43,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       });
 
       if (response.data.success) {
-        setUser(response.data.user);
-        setIsAuthenticated(true);
+        onLogin(response.data.user);
       }
     } catch (error) {
       console.error(error);

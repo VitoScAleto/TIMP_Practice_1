@@ -1,8 +1,9 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppBar, Toolbar, Typography, Button } from "@mui/material";
+import UserMenu from "./UserMenu";
 
-const Navbar = ({ isAuthenticated, onLogout }) => {
+const Navbar = ({ isAuthenticated, onLogout, user }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -34,9 +35,7 @@ const Navbar = ({ isAuthenticated, onLogout }) => {
         </Button>
 
         {isAuthenticated ? (
-          <Button color="inherit" onClick={handleLogout} sx={{ ml: 2 }}>
-            Выйти
-          </Button>
+          <UserMenu user={user} onLogout={handleLogout} />
         ) : (
           <Button color="inherit" component={Link} to="/auth" sx={{ ml: 2 }}>
             Войти

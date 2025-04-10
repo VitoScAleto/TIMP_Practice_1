@@ -16,5 +16,17 @@
     "name": "5",
     "email": "5",
     "password": "$2b$10$ka9GYOvLtk.d77uVLr8OOuxEbXPEk/0ufOicPrXLp9eCOOlJfdFLm"
+  },
+  {
+    "id": 1744283568122,
+    "name": "Виталий",
+    "email": "6",
+    "password": "$2b$10$zqawfbXs5kekibFlhSC7SOrXk9TBMmTaXYfI.DV5ZwOEpk0LmFjmW"
+  },
+  {
+    "id": 1744284626678,
+    "name": "8",
+    "email": "8",
+    "password": "$2b$10$rB85maipyB7IjrzcnKefTuyBn17jsiKFAeBLfwwB.XhzfTK1VmdbG"
   }
 ]

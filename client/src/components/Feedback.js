@@ -1,18 +1,33 @@
 import React, { useState, useEffect } from "react";
 import {
-  Typography,
-  Container,
   TextField,
-  Button,
-  List,
   ListItem,
   ListItemText,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Collapse,
+  IconButton,
+  List,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import api from "../api";
+import {
+  StyledContainer,
+  StyledButton,
+  StyledTypography,
+  StyledList,
+} from "../styles/FeedbackStyles";
 
 const Feedback = ({ user }) => {
   const [message, setMessage] = useState("");
   const [feedbackList, setFeedbackList] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [editMessage, setEditMessage] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [openMyFeedback, setOpenMyFeedback] = useState(false);
 
   useEffect(() => {
     const fetchFeedback = async () => {
@@ -42,20 +57,38 @@ const Feedback = ({ user }) => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async () => {
     try {
-      await api.delete(`/json/feedback/${id}`);
-      setFeedbackList(feedbackList.filter((fb) => fb.id !== id));
+      await api.delete(`/json/feedback/${deleteId}`);
+      setFeedbackList(feedbackList.filter((fb) => fb.id !== deleteId));
+      setOpenDialog(false);
     } catch (err) {
       console.error("Error deleting feedback:", err);
     }
   };
 
+  const handleEdit = async (id) => {
+    if (!editMessage.trim()) return;
+
+    try {
+      const response = await api.put(`/json/feedback/${id}`, {
+        message: editMessage,
+      });
+      setFeedbackList(
+        feedbackList.map((fb) => (fb.id === id ? response.data : fb))
+      );
+      setEditMessage("");
+      setEditId(null);
+    } catch (error) {
+      console.error("Error editing feedback:", error);
+    }
+  };
+
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
+    <StyledContainer>
+      <StyledTypography variant="h4" gutterBottom>
         Обратная связь
-      </Typography>
+      </StyledTypography>
       <form onSubmit={handleSubmit}>
         <TextField
           label="Ваш отзыв"
@@ -64,14 +97,66 @@ const Feedback = ({ user }) => {
           fullWidth
           margin="normal"
         />
-        <Button type="submit" variant="contained" color="primary">
+        <StyledButton type="submit" variant="contained" color="primary">
           Отправить
-        </Button>
+        </StyledButton>
       </form>
+      <StyledTypography variant="h5" gutterBottom sx={{ mt: 4 }}>
+        Мои отзывы
+        <IconButton onClick={() => setOpenMyFeedback(!openMyFeedback)}>
+          <ExpandMoreIcon />
+        </IconButton>
+      </StyledTypography>
+      <Collapse in={openMyFeedback}>
+        <StyledList>
+          {feedbackList
+            .filter((fb) => fb.userId === user.id)
+            .map((fb) => (
+              <ListItem key={fb.id}>
+                <ListItemText
+                  primary={
+                    editId === fb.id ? (
+                      <TextField
+                        value={editMessage}
+                        onChange={(e) => setEditMessage(e.target.value)}
+                        fullWidth
+                      />
+                    ) : (
+                      fb.message
+                    )
+                  }
+                  secondary={new Date(fb.createdAt).toLocaleString()}
+                />
+                <StyledButton
+                  color="primary"
+                  onClick={() => {
+                    if (editId === fb.id) {
+                      handleEdit(fb.id);
+                    } else {
+                      setEditId(fb.id);
+                      setEditMessage(fb.message);
+                    }
+                  }}
+                >
+                  {editId === fb.id ? "Сохранить" : "Изменить"}
+                </StyledButton>
+                <StyledButton
+                  color="error"
+                  onClick={() => {
+                    setDeleteId(fb.id);
+                    setOpenDialog(true);
+                  }}
+                >
+                  Удалить
+                </StyledButton>
+              </ListItem>
+            ))}
+        </StyledList>
+      </Collapse>
 
-      <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
+      <StyledTypography variant="h5" gutterBottom sx={{ mt: 4 }}>
         Все отзывы
-      </Typography>
+      </StyledTypography>
       <List>
         {feedbackList.map((feedback) => (
           <ListItem key={feedback.id}>
@@ -83,29 +168,23 @@ const Feedback = ({ user }) => {
         ))}
       </List>
 
-      <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
-        Мои отзывы
-      </Typography>
-      <List>
-        {feedbackList
-          .filter((fb) => fb.userId === user.id)
-          .map((fb) => (
-            <ListItem
-              key={fb.id}
-              secondaryAction={
-                <Button color="error" onClick={() => handleDelete(fb.id)}>
-                  Удалить
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={fb.message}
-                secondary={new Date(fb.createdAt).toLocaleString()}
-              />
-            </ListItem>
-          ))}
-      </List>
-    </Container>
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <StyledTypography>
+            Вы уверены, что хотите удалить этот отзыв?
+          </StyledTypography>
+        </DialogContent>
+        <DialogActions>
+          <StyledButton onClick={() => setOpenDialog(false)} color="primary">
+            Отмена
+          </StyledButton>
+          <StyledButton onClick={handleDelete} color="error">
+            Удалить
+          </StyledButton>
+        </DialogActions>
+      </Dialog>
+    </StyledContainer>
   );
 };
 
