@@ -18,6 +18,7 @@ import {
   StyledButton,
   StyledTypography,
   StyledList,
+  StyledListItemText,
 } from "../styles/FeedbackStyles";
 
 const Feedback = ({ user }) => {
@@ -96,30 +97,35 @@ const Feedback = ({ user }) => {
           onChange={(e) => setMessage(e.target.value)}
           fullWidth
           margin="normal"
+          variant="outlined"
         />
         <StyledButton type="submit" variant="contained" color="primary">
           Отправить
         </StyledButton>
       </form>
+
+      {/* Мои отзывы */}
       <StyledTypography variant="h5" gutterBottom sx={{ mt: 4 }}>
         Мои отзывы
         <IconButton onClick={() => setOpenMyFeedback(!openMyFeedback)}>
           <ExpandMoreIcon />
         </IconButton>
       </StyledTypography>
+
       <Collapse in={openMyFeedback}>
         <StyledList>
           {feedbackList
             .filter((fb) => fb.userId === user.id)
             .map((fb) => (
               <ListItem key={fb.id}>
-                <ListItemText
+                <StyledListItemText
                   primary={
                     editId === fb.id ? (
                       <TextField
                         value={editMessage}
                         onChange={(e) => setEditMessage(e.target.value)}
                         fullWidth
+                        variant="outlined"
                       />
                     ) : (
                       fb.message
@@ -154,6 +160,7 @@ const Feedback = ({ user }) => {
         </StyledList>
       </Collapse>
 
+      {/* Все отзывы */}
       <StyledTypography variant="h5" gutterBottom sx={{ mt: 4 }}>
         Все отзывы
       </StyledTypography>
@@ -168,6 +175,7 @@ const Feedback = ({ user }) => {
         ))}
       </List>
 
+      {/* Удаление отзывов */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Подтверждение удаления</DialogTitle>
         <DialogContent>

@@ -1,24 +1,17 @@
 import React from "react";
+import { safetyMeasuresText } from "../Text/SafetyMeasuresText";
 import {
   Typography,
-  Container,
-  List,
-  ListItem,
   ListItemText,
   Table,
   TableBody,
-  TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   Paper,
-  Accordion,
   AccordionSummary,
   AccordionDetails,
-  styled,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { safetyMeasuresText } from "../Text/SafetyMeasuresText";
 import {
   StyledContainer,
   StyledTypographyTitle,
@@ -35,7 +28,6 @@ import {
 const SafetyMeasures = () => {
   return (
     <StyledContainer>
-      {/* Заголовок и описание */}
       <StyledTypographyTitle variant="h4" gutterBottom>
         {safetyMeasuresText.title}
       </StyledTypographyTitle>
@@ -43,7 +35,6 @@ const SafetyMeasures = () => {
         {safetyMeasuresText.description}
       </StyledTypographyDescription>
 
-      {/* Секции с аккордеонами */}
       {safetyMeasuresText.sections.map((section, index) => (
         <StyledAccordion key={index}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -66,7 +57,6 @@ const SafetyMeasures = () => {
         </StyledAccordion>
       ))}
 
-      {/* Таблица */}
       <StyledTableContainer component={Paper}>
         <Table>
           <TableHead>

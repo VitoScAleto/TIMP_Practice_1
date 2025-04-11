@@ -1,10 +1,12 @@
 import { styled } from "@mui/material/styles";
 
 export const AuthPageContainer = styled("div")({
+  position: "relative",
+  zIndex: 1,
+  minHeight: "100vh",
   display: "flex",
-  justifyContent: "center",
   alignItems: "center",
-  height: "100vh",
+  justifyContent: "center",
 });
 
 export const AuthPagePaper = styled("div")({

@@ -1,67 +1,78 @@
+import { styled } from "@mui/material/styles";
 import {
-  Typography,
+  Card,
   Container,
+  Typography,
   List,
   ListItem,
   TableCell,
   TableContainer,
   Accordion,
-  styled,
+  Paper,
 } from "@mui/material";
 
 export const StyledContainer = styled(Container)(({ theme }) => ({
-  padding: theme.spacing(4),
-  backgroundColor: "#f5f5f5",
-  borderRadius: "8px",
-  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+  padding: theme.spacing(6),
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[4],
+  transition: "background-color 0.3s ease-in-out",
 }));
 
 export const StyledTypographyTitle = styled(Typography)(({ theme }) => ({
-  marginBottom: theme.spacing(4),
-  color: "#333",
-  fontWeight: "bold",
+  marginBottom: theme.spacing(3),
+  fontWeight: 700,
+  color: theme.palette.text.primary,
+  fontSize: "2rem",
 }));
 
 export const StyledTypographyDescription = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(4),
-  color: "#555",
+  color: theme.palette.text.secondary,
+  fontSize: "1rem",
+  lineHeight: 1.6,
 }));
 
 export const StyledAccordion = styled(Accordion)(({ theme }) => ({
   marginBottom: theme.spacing(4),
   backgroundColor: "#fff",
-  borderRadius: "8px",
-  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-  padding: theme.spacing(3),
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[2],
+  padding: theme.spacing(2),
+  "&:hover": {
+    boxShadow: theme.shadows[4],
+  },
 }));
 
 export const StyledAccordionTitle = styled(Typography)(({ theme }) => ({
-  marginBottom: theme.spacing(2),
-  color: "#3f51b5",
-  fontWeight: "bold",
+  color: theme.palette.primary.main,
+  fontWeight: 600,
 }));
 
 export const StyledList = styled(List)(({ theme }) => ({
-  paddingLeft: theme.spacing(2),
+  paddingLeft: theme.spacing(3),
+  marginTop: theme.spacing(2),
 }));
 
 export const StyledListItem = styled(ListItem)(({ theme }) => ({
-  paddingLeft: theme.spacing(2),
-  color: "#555",
+  paddingLeft: theme.spacing(3),
+  color: theme.palette.text.primary,
 }));
 
 export const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
-  marginTop: theme.spacing(4),
+  marginTop: theme.spacing(5),
   backgroundColor: "#fff",
-  borderRadius: "8px",
-  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[2],
 }));
 
 export const StyledTableCellHeader = styled(TableCell)(({ theme }) => ({
-  backgroundColor: "#3f51b5",
-  color: "#fff !important",
+  backgroundColor: theme.palette.primary.main,
+  color: "#fff",
+  fontWeight: 600,
 }));
 
 export const StyledTableCell = styled(TableCell)(({ theme }) => ({
-  color: "#555",
+  color: theme.palette.text.primary,
+  fontSize: "0.9rem",
 }));

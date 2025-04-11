@@ -49,7 +49,7 @@ const Register = ({ onLogin }) => {
     }
 
     setIsLoading(true);
-    setErrorMessage(""); // Сброс сообщения об ошибке
+    setErrorMessage("");
 
     try {
       const response = await api.post("json/auth/register", {
@@ -59,7 +59,7 @@ const Register = ({ onLogin }) => {
       });
 
       if (response.data.success) {
-        onLogin(response.data.user); // Автоматический вход после регистрации
+        onLogin(response.data.user);
       } else {
         setErrorMessage(response.data.message || "Ошибка регистрации");
       }
