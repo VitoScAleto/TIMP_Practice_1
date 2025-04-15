@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, CircularProgress } from "@mui/material";
 import api from "../api";
+import { useAuth } from "../Context/AuthContext";
 import {
   StyledContainer,
   StyledTypography,
@@ -8,7 +9,8 @@ import {
   StyledButton,
 } from "../styles/LoginStyles";
 
-const Login = ({ onLogin }) => {
+const Login = () => {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({
@@ -16,6 +18,7 @@ const Login = ({ onLogin }) => {
     password: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const validate = () => {
     const newErrors = {
@@ -34,6 +37,7 @@ const Login = ({ onLogin }) => {
     }
 
     setIsLoading(true);
+    setLoginError("");
 
     try {
       const response = await api.post("/json/auth/login", {
@@ -42,10 +46,16 @@ const Login = ({ onLogin }) => {
       });
 
       if (response.data.success) {
-        onLogin(response.data.user);
+        login(response.data.user);
+      } else {
+        setLoginError(response.data.message || "Неверные учетные данные");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Ошибка входа:", error);
+      setLoginError(
+        error.response?.data?.message ||
+          "Произошла ошибка. Пожалуйста, попробуйте еще раз."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +73,11 @@ const Login = ({ onLogin }) => {
       <StyledTypography variant="h4" gutterBottom>
         Вход
       </StyledTypography>
+      {loginError && (
+        <Box sx={{ color: "error.main", mb: 2, textAlign: "center" }}>
+          {loginError}
+        </Box>
+      )}
       <Box
         component="form"
         onSubmit={handleSubmit}

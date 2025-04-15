@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Button, Menu, MenuItem, Avatar, Typography, Box } from "@mui/material";
 import SettingsModal from "./Settings";
+import { useAuth } from "../Context/AuthContext";
 
-const UserMenu = ({ user, onLogout, onUpdateUser }) => {
+const UserMenu = () => {
+  const { user, login, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -47,15 +49,10 @@ const UserMenu = ({ user, onLogout, onUpdateUser }) => {
           <Typography variant="subtitle2">{user?.email}</Typography>
         </MenuItem>
         <MenuItem onClick={handleSettingsOpen}>Настройки</MenuItem>
-        <MenuItem onClick={onLogout}>Выйти</MenuItem>
+        <MenuItem onClick={logout}>Выйти</MenuItem>
       </Menu>
 
-      <SettingsModal
-        open={openSettings}
-        onClose={handleSettingsClose}
-        user={user}
-        onUpdateUser={onUpdateUser}
-      />
+      <SettingsModal open={openSettings} onClose={handleSettingsClose} />
     </Box>
   );
 };

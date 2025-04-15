@@ -8,10 +8,11 @@ import {
   AuthPageTabs,
 } from "../styles/AuthPageStyles";
 import { AuthPageBackground } from "../styles/AuthPageGraphics";
+import { useAuth } from "../Context/AuthContext";
 
 const AuthPage = ({ onLogin }) => {
+  const { login } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
-
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./Context/AuthContext";
+import { SettingsProvider } from "./Context/SettingsContext";
 import HomePage from "./components/HomePage";
 import SafetyMeasures from "./components/SafetyMeasures";
 import Training from "./components/Training";
@@ -9,74 +10,28 @@ import AuthPage from "./components/AuthPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Проверка аутентификации при загрузке приложения
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Здесь можно добавить проверку токена/сессии
-        // const response = await api.get('/auth/check');
-        // if (response.data.authenticated) {
-        //   setIsAuthenticated(true);
-        //   setUser(response.data.user);
-        // }
-      } catch (error) {
-        console.error("Auth check failed:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  const handleLogin = (userData) => {
-    setIsAuthenticated(true);
-    setUser(userData);
-    // Можно сохранить токен в localStorage
-    // localStorage.setItem('token', userData.token);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    // Очищаем токен при выходе
-    // localStorage.removeItem('token');
-  };
+const AppContent = () => {
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
-    return <div>Загрузка...</div>; // Или красивый лоадер
+    return <div>Загрузка...</div>;
   }
 
   return (
     <BrowserRouter>
-      {isAuthenticated && (
-        <Navbar
-          isAuthenticated={isAuthenticated}
-          onLogout={handleLogout}
-          user={user}
-        />
-      )}
+      {isAuthenticated && <Navbar />}
       <Routes>
         <Route
           path="/"
           element={
-            isAuthenticated ? (
-              <HomePage user={user} />
-            ) : (
-              <Navigate to="/auth" replace />
-            )
+            isAuthenticated ? <HomePage /> : <Navigate to="/auth" replace />
           }
         />
         <Route
           path="/safety-measures"
           element={
             isAuthenticated ? (
-              <SafetyMeasures user={user} />
+              <SafetyMeasures />
             ) : (
               <Navigate to="/auth" replace />
             )
@@ -85,41 +40,25 @@ function App() {
         <Route
           path="/training"
           element={
-            isAuthenticated ? (
-              <Training user={user} />
-            ) : (
-              <Navigate to="/auth" replace />
-            )
+            isAuthenticated ? <Training /> : <Navigate to="/auth" replace />
           }
         />
         <Route
           path="/resources"
           element={
-            isAuthenticated ? (
-              <Resources user={user} />
-            ) : (
-              <Navigate to="/auth" replace />
-            )
+            isAuthenticated ? <Resources /> : <Navigate to="/auth" replace />
           }
         />
         <Route
           path="/feedback"
           element={
-            isAuthenticated ? (
-              <Feedback user={user} />
-            ) : (
-              <Navigate to="/auth" replace />
-            )
+            isAuthenticated ? <Feedback /> : <Navigate to="/auth" replace />
           }
         />
         <Route
           path="/auth"
           element={
-            isAuthenticated ? (
-              <Navigate to="/" replace />
-            ) : (
-              <AuthPage onLogin={handleLogin} />
-            )
+            !isAuthenticated ? <AuthPage /> : <Navigate to="/" replace />
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -127,6 +66,14 @@ function App() {
       <Footer />
     </BrowserRouter>
   );
-}
+};
+
+const App = () => (
+  <AuthProvider>
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
+  </AuthProvider>
+);
 
 export default App;

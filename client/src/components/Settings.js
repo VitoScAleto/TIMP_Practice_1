@@ -9,9 +9,18 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Switch,
+  FormGroup,
+  FormControlLabel,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../api";
+import { useAuth } from "../Context/AuthContext";
+import { useSettings } from "../Context/SettingsContext";
 
 const style = {
   position: "absolute",
@@ -25,8 +34,12 @@ const style = {
   borderRadius: 2,
 };
 
-const SettingsModal = ({ open, onClose, user, onUpdateUser }) => {
+const SettingsModal = ({ open, onClose }) => {
+  const { user, login } = useAuth();
+  const { settings, updateSettings } = useSettings();
   const [name, setName] = useState("");
+  const [theme, setTheme] = useState("light");
+  const [language, setLanguage] = useState("ru");
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -34,8 +47,10 @@ const SettingsModal = ({ open, onClose, user, onUpdateUser }) => {
   useEffect(() => {
     if (user) {
       setName(user.name || "");
+      setTheme(settings.theme);
+      setLanguage(settings.language);
     }
-  }, [user]);
+  }, [user, settings]);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -52,22 +67,36 @@ const SettingsModal = ({ open, onClose, user, onUpdateUser }) => {
       });
 
       if (response.data.success) {
-        onUpdateUser(response.data.user);
+        login(response.data.user);
+
+        updateSettings({
+          theme,
+          language,
+          email: user.email,
+          name: name.trim(),
+        });
+
         setSuccess(true);
-
         setTimeout(() => {
-          onClose(); // Закрываем модалку
+          onClose();
         }, 1000);
-
         setTimeout(() => {
-          setSuccess(false); // Убираем Snackbar
+          setSuccess(false);
         }, 3000);
       }
     } catch (error) {
-      console.error("Error updating name:", error);
+      console.error("Error updating settings:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleThemeChange = (event) => {
+    setTheme(event.target.value);
+  };
+
+  const handleLanguageChange = (event) => {
+    setLanguage(event.target.value);
   };
 
   const handleCloseSuccess = () => {
@@ -91,11 +120,7 @@ const SettingsModal = ({ open, onClose, user, onUpdateUser }) => {
               transition={{ duration: 0.3 }}
             >
               <Box sx={style}>
-                <Typography
-                  id="settings-modal-title"
-                  variant="h6"
-                  component="h2"
-                >
+                <Typography variant="h6" component="h2">
                   Настройки профиля
                 </Typography>
                 <Divider sx={{ my: 2 }} />
@@ -113,6 +138,32 @@ const SettingsModal = ({ open, onClose, user, onUpdateUser }) => {
                   error={error}
                   helperText={error && "Имя не может быть пустым"}
                 />
+
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="theme-select-label">Тема</InputLabel>
+                  <Select
+                    labelId="theme-select-label"
+                    value={theme}
+                    label="Тема"
+                    onChange={handleThemeChange}
+                  >
+                    <MenuItem value="light">Светлая</MenuItem>
+                    <MenuItem value="dark">Темная</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth margin="normal">
+                  <InputLabel id="language-select-label">Язык</InputLabel>
+                  <Select
+                    labelId="language-select-label"
+                    value={language}
+                    label="Язык"
+                    onChange={handleLanguageChange}
+                  >
+                    <MenuItem value="ru">Русский</MenuItem>
+                    <MenuItem value="en">English</MenuItem>
+                  </Select>
+                </FormControl>
 
                 <Box
                   sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}
@@ -146,12 +197,8 @@ const SettingsModal = ({ open, onClose, user, onUpdateUser }) => {
         onClose={handleCloseSuccess}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert
-          onClose={handleCloseSuccess}
-          severity="success"
-          sx={{ width: "100%" }}
-        >
-          Имя успешно изменено!
+        <Alert onClose={handleCloseSuccess} severity="success">
+          Настройки успешно сохранены!
         </Alert>
       </Snackbar>
     </>

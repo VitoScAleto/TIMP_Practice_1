@@ -10,8 +10,10 @@ import {
 } from "@mui/material";
 import { styles } from "../styles/RegisterStyle";
 import api from "../api";
+import { useAuth } from "../Context/AuthContext";
 
-const Register = ({ onLogin }) => {
+const Register = () => {
+  const { login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,7 +61,7 @@ const Register = ({ onLogin }) => {
       });
 
       if (response.data.success) {
-        onLogin(response.data.user);
+        login(response.data.user);
       } else {
         setErrorMessage(response.data.message || "Ошибка регистрации");
       }

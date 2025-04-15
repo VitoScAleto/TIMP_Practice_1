@@ -9,8 +9,8 @@ import {
   Divider,
 } from "@mui/material";
 import Lottie from "lottie-react";
-import { motion } from "framer-motion";
-
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../Context/AuthContext";
 import welcomeAnimation from "../Lottile/Welcome.json";
 import {
   HeroSection,
@@ -19,9 +19,12 @@ import {
   StyledQuote,
   CTAButton,
   fadeInUp,
+  nameAnimation,
 } from "../styles/HomePageStyles";
 
-const HomePage = ({ user }) => {
+const HomePage = () => {
+  const { user } = useAuth();
+
   return (
     <Container>
       <motion.div
@@ -31,19 +34,32 @@ const HomePage = ({ user }) => {
         variants={fadeInUp}
       >
         <HeroSection>
-          <Typography variant="h3" gutterBottom>
-            Добро пожаловать, {user?.name || "гость"}!
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Всё о безопасности на спортивных объектах — просто, удобно и
-            наглядно.
-          </Typography>
+          <Box sx={{ minHeight: 48, mt: 2 }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={user?.name || "guest"}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={nameAnimation}
+              >
+                <Typography variant="h3" gutterBottom>
+                  Добро пожаловать, {user?.name || "гость"}!
+                </Typography>
+              </motion.div>
+            </AnimatePresence>
+            <Typography variant="h6" color="text.secondary">
+              Всё о безопасности на спортивных объектах — просто, удобно и
+              наглядно.
+            </Typography>
+          </Box>
           <StyledLottieBox>
             <Lottie animationData={welcomeAnimation} loop autoplay />
           </StyledLottieBox>
         </HeroSection>
       </motion.div>
 
+      {/* Остальной код остается без изменений */}
       <Divider sx={{ my: 4 }} />
 
       <motion.div

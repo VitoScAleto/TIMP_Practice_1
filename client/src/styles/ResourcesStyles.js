@@ -39,9 +39,9 @@ export const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius * 2,
   boxShadow: theme.shadows[3],
   transition: "transform 0.3s, box-shadow 0.3s",
-  height: "100%", // Добавляем фиксированную высоту
-  display: "flex", // Используем flex для внутреннего расположения
-  flexDirection: "column", // Вертикальное расположение элементов
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
   "&:hover": {
     transform: "translateY(-5px)",
     boxShadow: theme.shadows[6],
@@ -49,7 +49,7 @@ export const StyledCard = styled(Card)(({ theme }) => ({
 }));
 
 export const StyledCardContent = styled("div")(({ theme }) => ({
-  flexGrow: 1, // Растягиваем контент на всю доступную высоту
+  flexGrow: 1,
   display: "flex",
   flexDirection: "column",
 }));
@@ -62,19 +62,19 @@ export const StyledCardTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: theme.palette.text.primary,
   fontSize: "1.5rem",
-  minHeight: "72px", // Фиксированная высота для заголовка
+  minHeight: "72px",
 }));
 
 export const StyledList = styled(List)(({ theme }) => ({
   padding: 0,
-  flexGrow: 1, // Растягиваем список на оставшееся пространство
+  flexGrow: 1,
 }));
 
 export const StyledListItem = styled(ListItem)(({ theme }) => ({
   padding: theme.spacing(1, 0),
-  minHeight: "48px", // Фиксированная высота для пунктов списка
+  minHeight: "48px",
   display: "flex",
-  alignItems: "center", // Выравнивание по вертикали
+  alignItems: "center",
   "&:hover": {
     backgroundColor: theme.palette.action.hover,
   },
@@ -86,7 +86,7 @@ export const StyledLink = styled("a")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   gap: theme.spacing(1),
-  width: "100%", // Занимаем всю ширину
+  width: "100%",
   padding: theme.spacing(1, 0),
   "&:hover": {
     textDecoration: "underline",
@@ -95,6 +95,6 @@ export const StyledLink = styled("a")(({ theme }) => ({
 }));
 
 export const StyledIconWrapper = styled("span")(({ theme }) => ({
-  width: "24px", // Фиксированная ширина для иконки
-  textAlign: "center", // Центрируем иконку
+  width: "24px",
+  textAlign: "center",
 }));

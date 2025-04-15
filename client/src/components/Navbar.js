@@ -17,17 +17,18 @@ import {
   StyledIconButton,
 } from "../styles/NavbarStyles";
 import UserMenu from "./UserMenu";
+import { useAuth } from "../Context/AuthContext";
 
-const Navbar = ({ isAuthenticated, onLogout, user }) => {
+const Navbar = () => {
+  const { user, isAuthenticated, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    onLogout();
+    logout();
     navigate("/auth");
   };
 
-  // Открыть или закрыть Drawer
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
   };
@@ -46,7 +47,7 @@ const Navbar = ({ isAuthenticated, onLogout, user }) => {
         <StyledTypography variant="h6">Спортивные сооружения</StyledTypography>
 
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          {/* Для мобильных устройств - иконка меню */}
+          {/* Меню для мобильных */}
           <StyledIconButton
             edge="start"
             color="inherit"
@@ -55,32 +56,23 @@ const Navbar = ({ isAuthenticated, onLogout, user }) => {
             <MenuIcon />
           </StyledIconButton>
 
-          {/* Кнопки навигации для десктопа */}
+          {/* Десктопное меню */}
           <Box sx={{ display: { xs: "none", sm: "flex" }, marginRight: 2 }}>
-            <StyledButton color="inherit" component={Link} to="/">
-              Главная
-            </StyledButton>
-            <StyledButton
-              color="inherit"
-              component={Link}
-              to="/safety-measures"
-            >
-              Меры безопасности
-            </StyledButton>
-            <StyledButton color="inherit" component={Link} to="/training">
-              Обучение
-            </StyledButton>
-            <StyledButton color="inherit" component={Link} to="/resources">
-              Ресурсы
-            </StyledButton>
-            <StyledButton color="inherit" component={Link} to="/feedback">
-              Обратная связь
-            </StyledButton>
+            {drawerLinks.map((link) => (
+              <StyledButton
+                key={link.to}
+                color="inherit"
+                component={Link}
+                to={link.to}
+              >
+                {link.text}
+              </StyledButton>
+            ))}
           </Box>
 
-          {/* Меню пользователя или кнопка "Войти" */}
+          {/* Блок авторизации */}
           {isAuthenticated ? (
-            <UserMenu user={user} onLogout={handleLogout} />
+            <UserMenu />
           ) : (
             <StyledButton color="inherit" component={Link} to="/auth">
               Войти
@@ -88,13 +80,13 @@ const Navbar = ({ isAuthenticated, onLogout, user }) => {
           )}
         </Box>
 
-        {/* Drawer для мобильных устройств */}
+        {/* Мобильное меню */}
         <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
           <List>
-            {drawerLinks.map((link, index) => (
+            {drawerLinks.map((link) => (
               <ListItem
                 button
-                key={index}
+                key={link.to}
                 component={Link}
                 to={link.to}
                 onClick={toggleDrawer(false)}
