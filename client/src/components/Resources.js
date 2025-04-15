@@ -1,37 +1,55 @@
 import React from "react";
+import { resourcesData } from "../Text/ResourceText";
 import {
-  Typography,
-  Container,
-  List,
-  ListItem,
-  ListItemText,
-  Link,
-} from "@mui/material";
+  StyledContainer,
+  StyledTitle,
+  StyledDescription,
+  StyledCard,
+  StyledCardContent,
+  StyledCardTitle,
+  StyledList,
+  StyledListItem,
+  StyledLink,
+  StyledIconWrapper,
+} from "../styles/ResourcesStyles";
+import { CardContent, Grid } from "@mui/material";
 
 const Resources = () => {
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
-        Полезные ресурсы
-      </Typography>
-      <List>
-        <ListItem>
-          <Link href="#" color="primary">
-            Нормативные документы
-          </Link>
-        </ListItem>
-        <ListItem>
-          <Link href="#" color="primary">
-            Контакты служб экстренной помощи
-          </Link>
-        </ListItem>
-        <ListItem>
-          <Link href="#" color="primary">
-            Рекомендации по улучшению безопасности
-          </Link>
-        </ListItem>
-      </List>
-    </Container>
+    <StyledContainer maxWidth="md">
+      <StyledTitle variant="h1">{resourcesData.title}</StyledTitle>
+      <StyledDescription variant="body1">
+        {resourcesData.description}
+      </StyledDescription>
+
+      <Grid container spacing={3}>
+        {resourcesData.sections.map((section, index) => (
+          <Grid item xs={12} md={4} key={index}>
+            <StyledCard>
+              <StyledCardContent>
+                <StyledCardTitle variant="h2">
+                  <StyledIconWrapper>{section.icon}</StyledIconWrapper>
+                  {section.title}
+                </StyledCardTitle>
+                <StyledList>
+                  {section.items.map((item, itemIndex) => (
+                    <StyledListItem key={itemIndex}>
+                      <StyledLink
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {item.text}
+                      </StyledLink>
+                    </StyledListItem>
+                  ))}
+                </StyledList>
+              </StyledCardContent>
+            </StyledCard>
+          </Grid>
+        ))}
+      </Grid>
+    </StyledContainer>
   );
 };
 

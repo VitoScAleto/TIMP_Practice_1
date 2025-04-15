@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button, Menu, MenuItem, Avatar, Typography, Box } from "@mui/material";
 import SettingsModal from "./Settings";
 
-const UserMenu = ({ user, onLogout }) => {
+const UserMenu = ({ user, onLogout, onUpdateUser }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [openSettings, setOpenSettings] = useState(false);
 
@@ -50,7 +50,12 @@ const UserMenu = ({ user, onLogout }) => {
         <MenuItem onClick={onLogout}>Выйти</MenuItem>
       </Menu>
 
-      <SettingsModal open={openSettings} onClose={handleSettingsClose} />
+      <SettingsModal
+        open={openSettings}
+        onClose={handleSettingsClose}
+        user={user}
+        onUpdateUser={onUpdateUser}
+      />
     </Box>
   );
 };

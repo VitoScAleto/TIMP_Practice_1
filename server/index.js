@@ -99,6 +99,48 @@ async function saveFeedbackToJson(feedback) {
 
 // Маршруты для работы с JSON
 
+// изменение имя пользователя
+app.put("/api/json/auth/update-name", async (req, res) => {
+  const { userId, name } = req.body;
+
+  if (!userId || !name || !name.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: "User ID and name are required",
+    });
+  }
+
+  try {
+    const users = await getUsersFromJson();
+    const userIndex = users.findIndex((u) => u.id === userId);
+
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Обновляем имя пользователя
+    users[userIndex].name = name.trim();
+
+    // Сохраняем обновленный список пользователей
+    await fs.writeFile(USERS_JSON_PATH, JSON.stringify(users, null, 2));
+
+    res.json({
+      success: true,
+      user: users[userIndex],
+    });
+  } catch (err) {
+    console.error("Error updating user name:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
+  }
+});
+
 // Регистрация (JSON)
 app.post("/api/json/auth/register", async (req, res) => {
   console.log("JSON Registration request received");
