@@ -44,7 +44,7 @@ const HomePage = () => {
                 variants={nameAnimation}
               >
                 <Typography variant="h3" gutterBottom>
-                  Добро пожаловать, {user?.name || "гость"}!
+                  Добро пожаловать, {user?.username || "гость"}!
                 </Typography>
               </motion.div>
             </AnimatePresence>

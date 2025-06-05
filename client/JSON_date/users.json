@@ -52,5 +52,17 @@
     "name": "Мое имя!;!;!№%!№:",
     "email": "6666666666",
     "password": "$2b$10$0TY8e3euUYw7CcEoikV/EuqDhqQ4SRms1OX.G1iIGy18pXkTtXjfq"
+  },
+  {
+    "id": 1749133131626,
+    "name": "Виталий",
+    "email": "moe@mail.ru",
+    "password": "$2b$10$IXebha/vw9wj4uYLuAXcM.QRF0jNtDVDOXGVHoqXI8WQtm83x4rBK"
+  },
+  {
+    "id": 1749133174814,
+    "name": "Fffd",
+    "email": "moe.bratstvo@gmail.ru",
+    "password": "$2b$10$4yGXhQMlgZimk8Wf6ElSV.FuRRjCJazYLFv7wa/L0rxnurPqUSF42"
   }
 ]

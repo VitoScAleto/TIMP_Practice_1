@@ -46,7 +46,8 @@ const SettingsModal = ({ open, onClose }) => {
 
   useEffect(() => {
     if (user) {
-      setName(user.name || "");
+      console.log("Current user:", user);
+      setName(user.username || "");
       setTheme(settings.theme);
       setLanguage(settings.language);
     }
@@ -61,9 +62,9 @@ const SettingsModal = ({ open, onClose }) => {
     setIsLoading(true);
 
     try {
-      const response = await api.put("json/auth/update-name", {
+      const response = await api.put("/auth/update-username", {
         userId: user.id,
-        name: name.trim(),
+        newUsername: name.trim(),
       });
 
       if (response.data.success) {
@@ -73,7 +74,7 @@ const SettingsModal = ({ open, onClose }) => {
           theme,
           language,
           email: user.email,
-          name: name.trim(),
+          username: name.trim(),
         });
 
         setSuccess(true);

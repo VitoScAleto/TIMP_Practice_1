@@ -38,7 +38,7 @@ const Feedback = () => {
     const fetchFeedback = async () => {
       try {
         setLoading(true);
-        const response = await api.get("/json/feedback");
+        const response = await api.get("/get/feedback");
         setFeedbackList(response.data);
       } catch (error) {
         console.error("Error fetching feedback:", error);
@@ -56,7 +56,7 @@ const Feedback = () => {
 
     try {
       setLoading(true);
-      const response = await api.post("/json/feedback", {
+      const response = await api.post("/post/feedback", {
         message,
         userId: user.id,
       });
@@ -73,7 +73,7 @@ const Feedback = () => {
   const handleDelete = async () => {
     try {
       setLoading(true);
-      await api.delete(`/json/feedback/${deleteId}`);
+      await api.delete(`/delete/feedback/${deleteId}`);
       setFeedbackList(feedbackList.filter((fb) => fb.id !== deleteId));
       setOpenDialog(false);
     } catch (err) {

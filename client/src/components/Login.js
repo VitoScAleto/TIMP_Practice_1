@@ -40,7 +40,7 @@ const Login = () => {
     setLoginError("");
 
     try {
-      const response = await api.post("/json/auth/login", {
+      const response = await api.post("/auth/login", {
         email,
         password,
       });

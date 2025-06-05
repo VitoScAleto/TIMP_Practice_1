@@ -34,7 +34,7 @@ const UserMenu = () => {
         sx={{ textTransform: "none", ml: 2 }}
       >
         <Typography variant="body1" sx={{ ml: 1 }}>
-          {user?.name}
+          {user?.username}
         </Typography>
       </Button>
 

@@ -9,7 +9,7 @@ export const SettingsProvider = ({ children, userEmail }) => {
       email: userEmail || "",
       theme: "light",
       language: "ru",
-      name: "",
+      username: "",
     };
     return savedSettings ? JSON.parse(savedSettings) : defaultSettings;
   };

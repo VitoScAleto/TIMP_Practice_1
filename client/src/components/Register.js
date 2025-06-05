@@ -14,28 +14,71 @@ import { useAuth } from "../Context/AuthContext";
 
 const Register = () => {
   const { login } = useAuth();
-  const [name, setName] = useState("");
+  const [username, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState({
-    name: false,
-    email: false,
-    password: false,
-    confirmPassword: false,
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const validatePassword = (password) => {
+    const re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    return re.test(password);
+  };
+
   const validate = () => {
     const newErrors = {
-      name: !name.trim(),
-      email: !email.trim(),
-      password: !password.trim(),
-      confirmPassword: !confirmPassword.trim(),
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
     };
+
+    let isValid = true;
+
+    if (!username.trim()) {
+      newErrors.username = "Это поле обязательно для заполнения";
+      isValid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Это поле обязательно для заполнения";
+      isValid = false;
+    } else if (!validateEmail(email)) {
+      newErrors.email = "Введите корректный email";
+      isValid = false;
+    }
+
+    if (!password.trim()) {
+      newErrors.password = "Это поле обязательно для заполнения";
+      isValid = false;
+    } else if (!validatePassword(password)) {
+      newErrors.password =
+        "Пароль должен содержать минимум 8 символов, включая хотя бы одну букву и одну цифру";
+      isValid = false;
+    }
+
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = "Это поле обязательно для заполнения";
+      isValid = false;
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = "Пароли не совпадают";
+      isValid = false;
+    }
+
     setErrors(newErrors);
-    return !Object.values(newErrors).some(Boolean);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
@@ -45,17 +88,12 @@ const Register = () => {
       return;
     }
 
-    if (password !== confirmPassword) {
-      alert("Пароли не совпадают");
-      return;
-    }
-
     setIsLoading(true);
     setErrorMessage("");
 
     try {
-      const response = await api.post("json/auth/register", {
-        name,
+      const response = await api.post("/auth/register", {
+        username,
         email,
         password,
       });
@@ -74,10 +112,27 @@ const Register = () => {
   };
 
   const handleBlur = (field) => {
-    setErrors((prev) => ({
-      ...prev,
-      [field]: !eval(field).trim(),
-    }));
+    if (field === "email" && email && !validateEmail(email)) {
+      setErrors((prev) => ({
+        ...prev,
+        email: "Введите корректный email",
+      }));
+    } else if (
+      field === "password" &&
+      password &&
+      !validatePassword(password)
+    ) {
+      setErrors((prev) => ({
+        ...prev,
+        password:
+          "Пароль должен содержать минимум 8 символов, включая хотя бы одну букву и одну цифру",
+      }));
+    } else if (!eval(field).trim()) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "Это поле обязательно для заполнения",
+      }));
+    }
   };
 
   return (
@@ -99,12 +154,12 @@ const Register = () => {
       >
         <TextField
           label="Имя"
-          value={name}
+          value={username}
           onChange={(e) => setName(e.target.value)}
           onBlur={() => handleBlur("name")}
-          error={errors.name}
-          helperText={errors.name && "Это поле обязательно для заполнения"}
-          sx={errors.name ? styles.error : null}
+          error={!!errors.username}
+          helperText={errors.username}
+          sx={errors.username ? styles.error : null}
           fullWidth
           required
         />
@@ -114,8 +169,8 @@ const Register = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
           onBlur={() => handleBlur("email")}
-          error={errors.email}
-          helperText={errors.email && "Это поле обязательно для заполнения"}
+          error={!!errors.email}
+          helperText={errors.email}
           sx={errors.email ? styles.error : null}
           fullWidth
           required
@@ -129,8 +184,8 @@ const Register = () => {
             setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
           }
           onBlur={() => handleBlur("password")}
-          error={errors.password}
-          helperText={errors.password && "Это поле обязательно для заполнения"}
+          error={!!errors.password}
+          helperText={errors.password}
           sx={errors.password ? styles.error : null}
           fullWidth
           required
@@ -144,10 +199,8 @@ const Register = () => {
             setConfirmPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
           }
           onBlur={() => handleBlur("confirmPassword")}
-          error={errors.confirmPassword}
-          helperText={
-            errors.confirmPassword && "Это поле обязательно для заполнения"
-          }
+          error={!!errors.confirmPassword}
+          helperText={errors.confirmPassword}
           sx={errors.confirmPassword ? styles.error : null}
           fullWidth
           required
