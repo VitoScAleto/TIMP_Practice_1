@@ -12,18 +12,16 @@ import {
   AccordionDetails,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { styled } from "@mui/material/styles";
 import {
-  StyledContainer,
-  StyledTypographyTitle,
-  StyledTypographyDescription,
-  StyledAccordion,
-  StyledAccordionTitle,
-  StyledList,
-  StyledListItem,
-  StyledTableContainer,
-  StyledTableCellHeader,
-  StyledTableCell,
-} from "../styles/SafetyMeasuresStyles";
+  Card,
+  Container,
+  List,
+  ListItem,
+  TableCell,
+  TableContainer,
+  Accordion,
+} from "@mui/material";
 
 const SafetyMeasures = () => {
   return (
@@ -84,3 +82,71 @@ const SafetyMeasures = () => {
 };
 
 export default SafetyMeasures;
+
+// Стили внизу файла:
+
+const StyledContainer = styled(Container)(({ theme }) => ({
+  padding: theme.spacing(6),
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[4],
+  transition: "background-color 0.3s ease-in-out",
+}));
+
+const StyledTypographyTitle = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  fontWeight: 700,
+  color: theme.palette.text.primary,
+  fontSize: "2rem",
+}));
+
+const StyledTypographyDescription = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+  color: theme.palette.text.secondary,
+  fontSize: "1rem",
+  lineHeight: 1.6,
+}));
+
+const StyledAccordion = styled(Accordion)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+  backgroundColor: "#fff",
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[2],
+  padding: theme.spacing(2),
+  "&:hover": {
+    boxShadow: theme.shadows[4],
+  },
+}));
+
+const StyledAccordionTitle = styled(Typography)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  fontWeight: 600,
+}));
+
+const StyledList = styled(List)(({ theme }) => ({
+  paddingLeft: theme.spacing(3),
+  marginTop: theme.spacing(2),
+}));
+
+const StyledListItem = styled(ListItem)(({ theme }) => ({
+  paddingLeft: theme.spacing(3),
+  color: theme.palette.text.primary,
+}));
+
+const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+  marginTop: theme.spacing(5),
+  backgroundColor: "#fff",
+  borderRadius: theme.shape.borderRadius * 2,
+  boxShadow: theme.shadows[2],
+}));
+
+const StyledTableCellHeader = styled(TableCell)(({ theme }) => ({
+  backgroundColor: theme.palette.primary.main,
+  color: "#fff",
+  fontWeight: 600,
+}));
+
+const StyledTableCell = styled(TableCell)(({ theme }) => ({
+  color: theme.palette.text.primary,
+  fontSize: "0.9rem",
+}));

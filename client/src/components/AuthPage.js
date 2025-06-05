@@ -2,14 +2,12 @@ import React, { useState } from "react";
 import { Tabs, Tab, Paper, Box, Fade } from "@mui/material";
 import Login from "./Login";
 import Register from "./Register";
-import {
-  AuthPageContainer,
-  AuthPagePaper,
-  AuthPageTabs,
-} from "../styles/AuthPageStyles";
-import { AuthPageBackground } from "../styles/AuthPageGraphics";
+import Lottie from "lottie-react";
+import animationData from "../Lottile/security.json";
+import animationData1 from "../Lottile/ball.json";
 import { useAuth } from "../Context/AuthContext";
-
+import { styled } from "@mui/material/styles";
+// Основной компонент страницы авторизации
 const AuthPage = ({ onLogin }) => {
   const { login } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
@@ -46,3 +44,85 @@ const AuthPage = ({ onLogin }) => {
 };
 
 export default AuthPage;
+
+// ========== СТИЛИ ==========
+
+const AuthPageContainer = styled("div")({
+  position: "relative",
+  zIndex: 1,
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const AuthPagePaper = styled("div")({
+  padding: "16px",
+  borderRadius: "8px",
+  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+});
+
+const AuthPageTabs = {
+  marginBottom: "16px",
+};
+
+// ========== ГРАФИКА (ФОН) ==========
+
+const AuthPageBackground = () => {
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        top: 0,
+        left: "300px",
+        width: "100%",
+        height: "100%",
+        zIndex: -1,
+        overflow: "hidden",
+        pointerEvents: "none",
+        opacity: 0.7,
+      }}
+    >
+      {/* Анимация security */}
+      <Box
+        sx={{
+          position: "absolute",
+          width: "50%",
+          height: "100%",
+          zIndex: 2,
+          right: "250px",
+        }}
+      >
+        <Lottie
+          animationData={animationData}
+          loop
+          autoplay
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+        />
+      </Box>
+      {/* Анимация ball */}
+      <Box
+        sx={{
+          position: "fixed",
+          right: "1000px",
+          width: "40%",
+          height: "100%",
+          zIndex: 1,
+        }}
+      >
+        <Lottie
+          animationData={animationData1}
+          loop
+          autoplay
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+        />
+      </Box>
+    </Box>
+  );
+};

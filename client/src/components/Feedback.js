@@ -10,17 +10,15 @@ import {
   Collapse,
   IconButton,
   List,
+  Container,
+  Button,
+  Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
-import {
-  StyledContainer,
-  StyledButton,
-  StyledTypography,
-  StyledList,
-  StyledListItemText,
-} from "../styles/FeedbackStyles";
+
+import { styled } from "@mui/material/styles";
 
 const Feedback = () => {
   const { user } = useAuth();
@@ -39,7 +37,17 @@ const Feedback = () => {
       try {
         setLoading(true);
         const response = await api.get("/get/feedback");
-        setFeedbackList(response.data);
+
+        // Преобразование полей под нужды компонента:
+        const adaptedFeedback = response.data.feedback.map((item) => ({
+          id: item.feed_id,
+          message: item.data_feed,
+          createdAt: item.created_at,
+          userId: item.user_id,
+          username: item.username,
+        }));
+
+        setFeedbackList(adaptedFeedback);
       } catch (error) {
         console.error("Error fetching feedback:", error);
         setError("Не удалось загрузить отзывы");
@@ -49,7 +57,6 @@ const Feedback = () => {
     };
     fetchFeedback();
   }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -60,7 +67,17 @@ const Feedback = () => {
         message,
         userId: user.id,
       });
-      setFeedbackList([...feedbackList, response.data]);
+
+      const fb = response.data.feedback;
+      const newFeedbackItem = {
+        id: fb.feed_id,
+        message: fb.data_feed,
+        createdAt: fb.created_at,
+        userId: fb.user_id,
+        username: fb.username,
+      };
+
+      setFeedbackList([...feedbackList, newFeedbackItem]);
       setMessage("");
     } catch (error) {
       console.error("Error submitting feedback:", error);
@@ -73,33 +90,12 @@ const Feedback = () => {
   const handleDelete = async () => {
     try {
       setLoading(true);
-      await api.delete(`/delete/feedback/${deleteId}`);
+      await api.delete(`/delete/feedback/${deleteId}?userId=${user.id}`);
       setFeedbackList(feedbackList.filter((fb) => fb.id !== deleteId));
       setOpenDialog(false);
     } catch (err) {
       console.error("Error deleting feedback:", err);
       setError("Не удалось удалить отзыв");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEdit = async (id) => {
-    if (!editMessage.trim()) return;
-
-    try {
-      setLoading(true);
-      const response = await api.put(`/json/feedback/${id}`, {
-        message: editMessage,
-      });
-      setFeedbackList(
-        feedbackList.map((fb) => (fb.id === id ? response.data : fb))
-      );
-      setEditMessage("");
-      setEditId(null);
-    } catch (error) {
-      console.error("Error editing feedback:", error);
-      setError("Не удалось изменить отзыв");
     } finally {
       setLoading(false);
     }
@@ -145,8 +141,16 @@ const Feedback = () => {
             <IconButton
               onClick={() => setOpenMyFeedback(!openMyFeedback)}
               disabled={loading}
+              aria-label={
+                openMyFeedback ? "Скрыть мои отзывы" : "Показать мои отзывы"
+              }
             >
-              <ExpandMoreIcon />
+              <ExpandMoreIcon
+                style={{
+                  transform: openMyFeedback ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.3s",
+                }}
+              />
             </IconButton>
           </StyledTypography>
 
@@ -155,7 +159,23 @@ const Feedback = () => {
               {feedbackList
                 .filter((fb) => fb.userId === user.id)
                 .map((fb) => (
-                  <ListItem key={fb.id}>
+                  <ListItem
+                    key={fb.id}
+                    secondaryAction={
+                      <>
+                        <StyledButton
+                          color="error"
+                          onClick={() => {
+                            setDeleteId(fb.id);
+                            setOpenDialog(true);
+                          }}
+                          disabled={loading}
+                        >
+                          Удалить
+                        </StyledButton>
+                      </>
+                    }
+                  >
                     <StyledListItemText
                       primary={
                         editId === fb.id ? (
@@ -167,35 +187,13 @@ const Feedback = () => {
                             disabled={loading}
                           />
                         ) : (
-                          fb.message
+                          <>
+                            <strong>{fb.username}:</strong> {fb.message}
+                          </>
                         )
                       }
                       secondary={new Date(fb.createdAt).toLocaleString()}
                     />
-                    <StyledButton
-                      color="primary"
-                      onClick={() => {
-                        if (editId === fb.id) {
-                          handleEdit(fb.id);
-                        } else {
-                          setEditId(fb.id);
-                          setEditMessage(fb.message);
-                        }
-                      }}
-                      disabled={loading}
-                    >
-                      {editId === fb.id ? "Сохранить" : "Изменить"}
-                    </StyledButton>
-                    <StyledButton
-                      color="error"
-                      onClick={() => {
-                        setDeleteId(fb.id);
-                        setOpenDialog(true);
-                      }}
-                      disabled={loading}
-                    >
-                      Удалить
-                    </StyledButton>
                   </ListItem>
                 ))}
             </StyledList>
@@ -216,9 +214,13 @@ const Feedback = () => {
       ) : (
         <List>
           {feedbackList.map((feedback) => (
-            <ListItem key={feedback.id}>
+            <ListItem key={feedback.id} alignItems="flex-start">
               <ListItemText
-                primary={feedback.message}
+                primary={
+                  <>
+                    <strong>{feedback.username}:</strong> {feedback.message}
+                  </>
+                }
                 secondary={new Date(feedback.createdAt).toLocaleString()}
               />
             </ListItem>
@@ -252,3 +254,46 @@ const Feedback = () => {
 };
 
 export default Feedback;
+
+// ----------- Стили вниз файла -----------
+export const StyledContainer = styled(Container)(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  padding: theme.spacing(4),
+  backgroundColor: "#f5f5f5",
+  borderRadius: "12px",
+  boxShadow: theme.shadows[4],
+  [theme.breakpoints.down("sm")]: {
+    padding: theme.spacing(3),
+  },
+}));
+
+export const StyledButton = styled(Button)(({ theme }) => ({
+  marginTop: theme.spacing(2),
+  marginLeft: theme.spacing(2),
+  transition: "all 0.3s",
+  "&:hover": {
+    backgroundColor: theme.palette.primary.dark,
+    transform: "scale(1.05)",
+  },
+}));
+
+export const StyledTypography = styled(Typography)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  color: theme.palette.text.primary,
+  fontWeight: "bold",
+}));
+
+export const StyledList = styled(List)(({ theme }) => ({
+  maxHeight: 300,
+  overflowY: "auto",
+  marginTop: theme.spacing(2),
+  border: `1px solid ${theme.palette.divider}`,
+  borderRadius: theme.spacing(1),
+  backgroundColor: theme.palette.background.paper,
+}));
+
+export const StyledListItemText = styled(ListItemText)(({ theme }) => ({
+  "& .MuiTypography-body1": {
+    color: theme.palette.text.secondary,
+  },
+}));

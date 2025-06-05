@@ -271,7 +271,7 @@ app.post("/api/post/feedback", async (req, res) => {
 });
 app.delete("/api/delete/feedback/:id", async (req, res) => {
   const feedbackId = req.params.id;
-  const { userId } = req.body; // ID пользователя, который пытается удалить отзыв
+  const userId = req.query.userId;
   console.log(
     `[DELETE FEEDBACK] Request to delete feedback ${feedbackId} by user ${userId}`
   );

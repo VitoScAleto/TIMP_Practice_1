@@ -12,16 +12,9 @@ import Lottie from "lottie-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../Context/AuthContext";
 import welcomeAnimation from "../Lottile/Welcome.json";
-import {
-  HeroSection,
-  StyledLottieBox,
-  HighlightBlock,
-  StyledQuote,
-  CTAButton,
-  fadeInUp,
-  nameAnimation,
-} from "../styles/HomePageStyles";
 
+import { styled } from "@mui/material/styles";
+// Основной компонент
 const HomePage = () => {
   const { user } = useAuth();
 
@@ -59,7 +52,6 @@ const HomePage = () => {
         </HeroSection>
       </motion.div>
 
-      {/* Остальной код остается без изменений */}
       <Divider sx={{ my: 4 }} />
 
       <motion.div
@@ -119,3 +111,73 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
+// ================= СТИЛИ =================
+
+// Секция героя
+const HeroSection = styled(Box)(({ theme }) => ({
+  textAlign: "center",
+  paddingTop: theme.spacing(8),
+  paddingBottom: theme.spacing(6),
+}));
+
+// Анимация (Lottie)
+const StyledLottieBox = styled(Box)(() => ({
+  maxWidth: 300,
+  margin: "0 auto",
+  marginTop: 20,
+}));
+
+// Выделенный блок
+const HighlightBlock = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.grey[100],
+  borderRadius: theme.shape.borderRadius * 2,
+  padding: theme.spacing(3),
+  marginTop: theme.spacing(6),
+  marginBottom: theme.spacing(4),
+}));
+
+// Цитата
+const StyledQuote = styled(Typography)(() => ({
+  fontStyle: "italic",
+}));
+
+// Кнопка
+const CTAButton = styled(Button)(() => ({
+  marginTop: 32,
+}));
+
+// Анимация появления
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: (i = 1) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.2,
+      duration: 0.6,
+      ease: "easeOut",
+    },
+  }),
+};
+
+// Анимация имени пользователя
+const nameAnimation = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    transition: {
+      duration: 0.3,
+      ease: "easeIn",
+    },
+  },
+};

@@ -8,13 +8,12 @@ import {
   Box,
   Alert,
 } from "@mui/material";
-import { styles } from "../styles/RegisterStyle";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
 
 const Register = () => {
   const { login } = useAuth();
-  const [username, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -84,9 +83,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
 
     setIsLoading(true);
     setErrorMessage("");
@@ -112,26 +109,71 @@ const Register = () => {
   };
 
   const handleBlur = (field) => {
-    if (field === "email" && email && !validateEmail(email)) {
-      setErrors((prev) => ({
-        ...prev,
-        email: "Введите корректный email",
-      }));
-    } else if (
-      field === "password" &&
-      password &&
-      !validatePassword(password)
-    ) {
-      setErrors((prev) => ({
-        ...prev,
-        password:
-          "Пароль должен содержать минимум 8 символов, включая хотя бы одну букву и одну цифру",
-      }));
-    } else if (!eval(field).trim()) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: "Это поле обязательно для заполнения",
-      }));
+    let value;
+    switch (field) {
+      case "username":
+        value = username;
+        if (!value.trim()) {
+          setErrors((prev) => ({
+            ...prev,
+            username: "Это поле обязательно для заполнения",
+          }));
+        } else {
+          setErrors((prev) => ({ ...prev, username: "" }));
+        }
+        break;
+
+      case "email":
+        value = email;
+        if (!value.trim()) {
+          setErrors((prev) => ({
+            ...prev,
+            email: "Это поле обязательно для заполнения",
+          }));
+        } else if (!validateEmail(value)) {
+          setErrors((prev) => ({ ...prev, email: "Введите корректный email" }));
+        } else {
+          setErrors((prev) => ({ ...prev, email: "" }));
+        }
+        break;
+
+      case "password":
+        value = password;
+        if (!value.trim()) {
+          setErrors((prev) => ({
+            ...prev,
+            password: "Это поле обязательно для заполнения",
+          }));
+        } else if (!validatePassword(value)) {
+          setErrors((prev) => ({
+            ...prev,
+            password:
+              "Пароль должен содержать минимум 8 символов, включая хотя бы одну букву и одну цифру",
+          }));
+        } else {
+          setErrors((prev) => ({ ...prev, password: "" }));
+        }
+        break;
+
+      case "confirmPassword":
+        value = confirmPassword;
+        if (!value.trim()) {
+          setErrors((prev) => ({
+            ...prev,
+            confirmPassword: "Это поле обязательно для заполнения",
+          }));
+        } else if (value !== password) {
+          setErrors((prev) => ({
+            ...prev,
+            confirmPassword: "Пароли не совпадают",
+          }));
+        } else {
+          setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+        }
+        break;
+
+      default:
+        break;
     }
   };
 
@@ -155,8 +197,8 @@ const Register = () => {
         <TextField
           label="Имя"
           value={username}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={() => handleBlur("name")}
+          onChange={(e) => setUsername(e.target.value)}
+          onBlur={() => handleBlur("username")}
           error={!!errors.username}
           helperText={errors.username}
           sx={errors.username ? styles.error : null}
@@ -226,3 +268,34 @@ const Register = () => {
 };
 
 export default Register;
+
+const styles = {
+  textField: {
+    marginBottom: "28px",
+    position: "relative",
+    "& .MuiFormHelperText-root": {
+      position: "absolute",
+      bottom: "-22px",
+      left: 0,
+      margin: 0,
+      transition: "color 0.3s ease",
+    },
+  },
+  error: {
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": {
+        borderColor: "red",
+      },
+      "&:hover fieldset": {
+        borderColor: "darkred",
+      },
+    },
+    "& .MuiFormLabel-root": {
+      color: "red",
+    },
+    "& .MuiFormHelperText-root": {
+      color: "red",
+      fontWeight: 600,
+    },
+  },
+};

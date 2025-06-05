@@ -2,13 +2,9 @@ import React, { useState } from "react";
 import { Box, CircularProgress } from "@mui/material";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
-import {
-  StyledContainer,
-  StyledTypography,
-  StyledTextField,
-  StyledButton,
-} from "../styles/LoginStyles";
 
+import { styled } from "@mui/material/styles";
+import { Container, Button, TextField, Typography } from "@mui/material";
 const Login = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -145,3 +141,31 @@ const Login = () => {
 };
 
 export default Login;
+
+// ================= СТИЛИ =================
+
+const StyledContainer = styled(Container)({
+  maxWidth: "sm",
+  marginTop: "20px",
+});
+
+const StyledTypography = styled(Typography)({
+  marginBottom: "28px",
+});
+
+const StyledTextField = styled(TextField)(({ error }) => ({
+  marginBottom: "28px",
+  ...(error && {
+    "& .MuiOutlinedInput-root": {
+      "& fieldset": { borderColor: "red" },
+      "&:hover fieldset": { borderColor: "red" },
+    },
+    "& .MuiFormLabel-root": { color: "red" },
+    "& .MuiFormHelperText-root": { color: "red" },
+  }),
+}));
+
+const StyledButton = styled(Button)({
+  marginTop: "16px",
+  height: "48px",
+});
