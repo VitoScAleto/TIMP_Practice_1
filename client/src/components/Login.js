@@ -121,13 +121,6 @@ const Login = () => {
           {isLoading ? t("login.loggingIn") : t("login.submit")}
         </StyledButton>
       </Box>
-      <Box sx={{ mt: 4 }}>
-        <img
-          src="path/to/image.jpg"
-          alt={t("login.imageAlt")}
-          style={{ width: "100%", borderRadius: "8px" }}
-        />
-      </Box>
     </StyledContainer>
   );
 };
