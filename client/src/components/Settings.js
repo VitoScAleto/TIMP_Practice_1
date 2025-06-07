@@ -13,9 +13,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Switch,
-  FormGroup,
-  FormControlLabel,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../api";
@@ -36,17 +33,17 @@ const style = {
 
 const SettingsModal = ({ open, onClose }) => {
   const { user, login } = useAuth();
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, changeTheme, changeLanguage } =
+    useSettings();
   const [name, setName] = useState("");
-  const [theme, setTheme] = useState("light");
-  const [language, setLanguage] = useState("ru");
+  const [theme, setTheme] = useState(settings.theme);
+  const [language, setLanguage] = useState(settings.language);
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
-      console.log("Current user:", user);
       setName(user.username || "");
       setTheme(settings.theme);
       setLanguage(settings.language);
@@ -69,27 +66,27 @@ const SettingsModal = ({ open, onClose }) => {
       if (response.data.success) {
         const updatedUser = response.data.user;
 
+        // Обновляем данные пользователя
         login({
           user_id: updatedUser.user_id,
           username: updatedUser.username,
           email: updatedUser.email,
         });
 
+        // Обновляем настройки
         updateSettings({
-          ...settings,
-          theme,
-          language,
           username: updatedUser.username,
           email: updatedUser.email,
         });
+
+        // Применяем тему и язык
+        changeTheme(theme);
+        changeLanguage(language);
 
         setSuccess(true);
         setTimeout(() => {
           onClose();
         }, 1000);
-        setTimeout(() => {
-          setSuccess(false);
-        }, 3000);
       }
     } catch (error) {
       console.error("Error updating settings:", error);

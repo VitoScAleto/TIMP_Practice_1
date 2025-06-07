@@ -9,6 +9,7 @@ import Feedback from "./components/Feedback";
 import AuthPage from "./components/AuthPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import QrTicketsPage from "./components/QrTicketsPage";
 
 const AppContent = () => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -59,6 +60,16 @@ const AppContent = () => {
           path="/auth"
           element={
             !isAuthenticated ? <AuthPage /> : <Navigate to="/" replace />
+          }
+        />
+        <Route
+          path="/qr-tickets"
+          element={
+            isAuthenticated ? (
+              <QrTicketsPage />
+            ) : (
+              <Navigate to="/auth" replace />
+            )
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

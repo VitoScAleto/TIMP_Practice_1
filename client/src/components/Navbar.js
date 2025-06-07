@@ -1,17 +1,27 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Box, Drawer, List, ListItem, ListItemText } from "@mui/material";
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  AppBar,
+  Toolbar,
+  Button,
+  Typography,
+  IconButton,
+} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import QrCodeIcon from "@mui/icons-material/QrCode";
 import UserMenu from "./UserMenu";
 import { useAuth } from "../Context/AuthContext";
 import { useTranslation } from "../hooks/useTranslation";
 import { useLanguage } from "../hooks/useLanguage";
 import { styled } from "@mui/material/styles";
-import { AppBar, Toolbar, Button, Typography, IconButton } from "@mui/material";
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { language } = useLanguage();
+  const { isAuthenticated, logout } = useAuth();
   const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
@@ -31,6 +41,7 @@ const Navbar = () => {
     { text: t("navbar.training"), to: "/training" },
     { text: t("navbar.resources"), to: "/resources" },
     { text: t("navbar.feedback"), to: "/feedback" },
+    { text: t("navbar.qrTickets"), to: "/qr-tickets", icon: <QrCodeIcon /> },
   ];
 
   return (
@@ -38,7 +49,9 @@ const Navbar = () => {
       <StyledToolbar>
         <StyledTypography variant="h6">{t("navbar.title")}</StyledTypography>
 
+        {/* Боковая часть с меню и кнопками */}
         <Box sx={{ display: "flex", alignItems: "center" }}>
+          {/* Кнопка меню (гамбургер) для мобильных */}
           <StyledIconButton
             edge="start"
             color="inherit"
@@ -49,8 +62,9 @@ const Navbar = () => {
             <MenuIcon fontSize="inherit" />
           </StyledIconButton>
 
+          {/* Навигационные кнопки на больших экранах */}
           <Box sx={{ display: { xs: "none", sm: "flex" }, marginRight: 3 }}>
-            {drawerLinks.map(({ text, to }) => (
+            {drawerLinks.map(({ text, to, icon }) => (
               <StyledButton
                 key={to}
                 color="inherit"
@@ -58,6 +72,7 @@ const Navbar = () => {
                 to={to}
                 disableRipple
                 disableElevation
+                startIcon={icon || null}
                 sx={{
                   textTransform: "none",
                   fontWeight: 600,
@@ -70,6 +85,7 @@ const Navbar = () => {
             ))}
           </Box>
 
+          {/* Авторизация / UserMenu */}
           {isAuthenticated ? (
             <UserMenu />
           ) : (
@@ -94,6 +110,7 @@ const Navbar = () => {
           )}
         </Box>
 
+        {/* Drawer для мобильных */}
         <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
           <Box
             sx={{
