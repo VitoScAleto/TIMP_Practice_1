@@ -1,18 +1,23 @@
 import React, { useState } from "react";
-import { Box, CircularProgress } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  Container,
+  Button,
+  TextField,
+  Typography,
+} from "@mui/material";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
-
 import { styled } from "@mui/material/styles";
-import { Container, Button, TextField, Typography } from "@mui/material";
+import { useTranslation } from "../hooks/useTranslation"; // Используем ваш хук перевода
+
 const Login = () => {
+  const { t } = useTranslation(); // Используем ваш хук перевода
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState({
-    email: false,
-    password: false,
-  });
+  const [errors, setErrors] = useState({ email: false, password: false });
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
 
@@ -27,31 +32,19 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
-
+    if (!validate()) return;
     setIsLoading(true);
     setLoginError("");
-
     try {
-      const response = await api.post("/auth/login", {
-        email,
-        password,
-      });
-
+      const response = await api.post("/auth/login", { email, password });
       if (response.data.success) {
         login(response.data.user);
       } else {
-        setLoginError(response.data.message || "Неверные учетные данные");
+        setLoginError(response.data.message || t("login.invalidCredentials"));
       }
     } catch (error) {
       console.error("Ошибка входа:", error);
-      setLoginError(
-        error.response?.data?.message ||
-          "Произошла ошибка. Пожалуйста, попробуйте еще раз."
-      );
+      setLoginError(error.response?.data?.message || t("login.genericError"));
     } finally {
       setIsLoading(false);
     }
@@ -65,9 +58,9 @@ const Login = () => {
   };
 
   return (
-    <StyledContainer>
+    <StyledContainer maxWidth="sm">
       <StyledTypography variant="h4" gutterBottom>
-        Вход
+        {t("login.title")}
       </StyledTypography>
       {loginError && (
         <Box sx={{ color: "error.main", mb: 2, textAlign: "center" }}>
@@ -90,18 +83,18 @@ const Login = () => {
         }}
       >
         <StyledTextField
-          label="Email"
+          label={t("login.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
           onBlur={() => handleBlur("email")}
           error={errors.email}
-          helperText={errors.email && "Это поле обязательно для заполнения"}
+          helperText={errors.email && t("login.requiredField")}
           fullWidth
           required
         />
 
         <StyledTextField
-          label="Пароль"
+          label={t("login.password")}
           type="password"
           value={password}
           onChange={(e) =>
@@ -109,7 +102,7 @@ const Login = () => {
           }
           onBlur={() => handleBlur("password")}
           error={errors.password}
-          helperText={errors.password && "Это поле обязательно для заполнения"}
+          helperText={errors.password && t("login.requiredField")}
           fullWidth
           required
         />
@@ -125,14 +118,13 @@ const Login = () => {
           fullWidth
           size="large"
         >
-          {isLoading ? "Вход..." : "Войти"}
+          {isLoading ? t("login.loggingIn") : t("login.submit")}
         </StyledButton>
       </Box>
-      {/* Место для изображений */}
       <Box sx={{ mt: 4 }}>
         <img
           src="path/to/image.jpg"
-          alt="Описание"
+          alt={t("login.imageAlt")}
           style={{ width: "100%", borderRadius: "8px" }}
         />
       </Box>

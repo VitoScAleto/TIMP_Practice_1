@@ -1,5 +1,5 @@
 import React from "react";
-import { trainingSections } from "../Text/TrainingText";
+import { useTranslation } from "../hooks/useTranslation";
 import { List, ListItem, ListItemText, CardHeader } from "@mui/material";
 import Lottie from "lottie-react";
 import { styled } from "@mui/material/styles";
@@ -10,30 +10,34 @@ import medical from "../Lottile/MedicalTraining.json";
 import security from "../Lottile/CybersecurityTraining.json";
 import eco from "../Lottile/EcoTraining.json";
 import psycho from "../Lottile/PsychoTraining.json";
+import { transform } from "framer-motion";
 
 const animationMap = {
-  "Физическая безопасность": physical,
-  "Пожарная безопасность": fire,
-  "Медицинская безопасность": medical,
-  "Информационная безопасность": security,
-  "Экологическая безопасность": eco,
-  "Психологическая безопасность": psycho,
+  physical: physical,
+  fire: fire,
+  medical: medical,
+  information: security,
+  environmental: eco,
+  psychological: psycho,
 };
 
 const Training = () => {
+  const { t } = useTranslation();
+  const trainingData = t("trainingSections");
+  const titlePageTraining = t("titlePageTraining");
   return (
     <StyledContainer>
       <Typography variant="h4" gutterBottom>
-        Обучение и тренинги
+        {titlePageTraining}
       </Typography>
 
-      {trainingSections.map((section, index) => (
+      {trainingData?.map((section, index) => (
         <StyledCard key={index}>
           <CardHeader
             avatar={
               <AnimationBox>
                 <Lottie
-                  animationData={animationMap[section.title]}
+                  animationData={animationMap[section.key]}
                   loop
                   autoplay
                 />
@@ -49,26 +53,30 @@ const Training = () => {
             {section.description}
           </DescriptionText>
           <List dense>
-            {section.list.map((item, idx) => (
+            {section.list?.map((item, idx) => (
               <ListItem key={idx}>
                 <ListItemText primary={item} />
               </ListItem>
             ))}
           </List>
-          <StyledLink
-            href={section.resourceLink}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Подробнее
-          </StyledLink>
-          <StyledLink
-            href={section.resourceLink1}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Подробнее
-          </StyledLink>
+          {section.resourceLink && (
+            <StyledLink
+              href={section.resourceLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t("training more")}
+            </StyledLink>
+          )}
+          {section.resourceLink1 && (
+            <StyledLink
+              href={section.resourceLink1}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t("training more")}
+            </StyledLink>
+          )}
         </StyledCard>
       ))}
     </StyledContainer>
@@ -77,8 +85,7 @@ const Training = () => {
 
 export default Training;
 
-// Стили внизу файла
-
+// Стили остаются без изменений
 const StyledContainer = styled(Container)(({ theme }) => ({
   paddingTop: theme.spacing(6),
   paddingBottom: theme.spacing(6),

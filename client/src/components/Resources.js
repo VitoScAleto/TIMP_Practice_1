@@ -1,18 +1,28 @@
 import React from "react";
-import { resourcesData } from "../Text/ResourceText";
-import { Grid } from "@mui/material";
+import { useTranslation } from "../hooks/useTranslation";
+import {
+  Grid,
+  Card,
+  Container,
+  Typography,
+  List,
+  ListItem,
+} from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { Card, Container, Typography, List, ListItem } from "@mui/material";
+
 const Resources = () => {
+  const { t } = useTranslation();
+  const resources = t("resources"); // локализованные данные
+
   return (
     <StyledContainer maxWidth="md">
-      <StyledTitle variant="h1">{resourcesData.title}</StyledTitle>
+      <StyledTitle variant="h1">{resources.title}</StyledTitle>
       <StyledDescription variant="body1">
-        {resourcesData.description}
+        {resources.description}
       </StyledDescription>
 
       <Grid container spacing={3}>
-        {resourcesData.sections.map((section, index) => (
+        {resources.sections.map((section, index) => (
           <Grid item xs={12} md={4} key={index}>
             <StyledCard>
               <StyledCardContent>
@@ -43,19 +53,15 @@ const Resources = () => {
 };
 
 export default Resources;
-
-// --- Стили вниз файла ---
-
-export const StyledContainer = styled(Container)(({ theme }) => ({
+const StyledContainer = styled(Container)(({ theme }) => ({
   padding: theme.spacing(6),
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius * 2,
   boxShadow: theme.shadows[4],
-  marginTop: theme.spacing(4),
-  marginBottom: theme.spacing(4),
+  margin: `${theme.spacing(4)} auto`,
 }));
 
-export const StyledTitle = styled(Typography)(({ theme }) => ({
+const StyledTitle = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(3),
   fontWeight: 700,
   color: theme.palette.primary.main,
@@ -63,7 +69,7 @@ export const StyledTitle = styled(Typography)(({ theme }) => ({
   textAlign: "center",
 }));
 
-export const StyledDescription = styled(Typography)(({ theme }) => ({
+const StyledDescription = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(4),
   color: theme.palette.text.secondary,
   fontSize: "1.1rem",
@@ -71,9 +77,8 @@ export const StyledDescription = styled(Typography)(({ theme }) => ({
   textAlign: "center",
 }));
 
-export const StyledCard = styled(Card)(({ theme }) => ({
+const StyledCard = styled(Card)(({ theme }) => ({
   padding: theme.spacing(3),
-  marginBottom: theme.spacing(3),
   borderRadius: theme.shape.borderRadius * 2,
   boxShadow: theme.shadows[3],
   transition: "transform 0.3s, box-shadow 0.3s",
@@ -86,13 +91,13 @@ export const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-export const StyledCardContent = styled("div")(({ theme }) => ({
+const StyledCardContent = styled("div")({
   flexGrow: 1,
   display: "flex",
   flexDirection: "column",
-}));
+});
 
-export const StyledCardTitle = styled(Typography)(({ theme }) => ({
+const StyledCardTitle = styled(Typography)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   gap: theme.spacing(2),
@@ -103,12 +108,12 @@ export const StyledCardTitle = styled(Typography)(({ theme }) => ({
   minHeight: "72px",
 }));
 
-export const StyledList = styled(List)(({ theme }) => ({
+const StyledList = styled(List)({
   padding: 0,
   flexGrow: 1,
-}));
+});
 
-export const StyledListItem = styled(ListItem)(({ theme }) => ({
+const StyledListItem = styled(ListItem)(({ theme }) => ({
   padding: theme.spacing(1, 0),
   minHeight: "48px",
   display: "flex",
@@ -118,7 +123,7 @@ export const StyledListItem = styled(ListItem)(({ theme }) => ({
   },
 }));
 
-export const StyledLink = styled("a")(({ theme }) => ({
+const StyledLink = styled("a")(({ theme }) => ({
   color: theme.palette.primary.main,
   textDecoration: "none",
   display: "flex",
@@ -132,7 +137,7 @@ export const StyledLink = styled("a")(({ theme }) => ({
   },
 }));
 
-export const StyledIconWrapper = styled("span")(({ theme }) => ({
+const StyledIconWrapper = styled("span")({
   width: "24px",
   textAlign: "center",
-}));
+});

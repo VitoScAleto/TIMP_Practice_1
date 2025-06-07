@@ -1,5 +1,5 @@
 import React from "react";
-import { safetyMeasuresText } from "../Text/SafetyMeasuresText";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   Typography,
   ListItemText,
@@ -10,11 +10,6 @@ import {
   Paper,
   AccordionSummary,
   AccordionDetails,
-} from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { styled } from "@mui/material/styles";
-import {
-  Card,
   Container,
   List,
   ListItem,
@@ -22,18 +17,23 @@ import {
   TableContainer,
   Accordion,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { styled } from "@mui/material/styles";
 
 const SafetyMeasures = () => {
+  const { t } = useTranslation();
+  const safetyText = t("safetyMeasuresText");
+
   return (
     <StyledContainer>
       <StyledTypographyTitle variant="h4" gutterBottom>
-        {safetyMeasuresText.title}
+        {safetyText.title}
       </StyledTypographyTitle>
       <StyledTypographyDescription variant="body1">
-        {safetyMeasuresText.description}
+        {safetyText.description}
       </StyledTypographyDescription>
 
-      {safetyMeasuresText.sections.map((section, index) => (
+      {safetyText.sections.map((section, index) => (
         <StyledAccordion key={index}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <StyledAccordionTitle variant="h6">
@@ -59,7 +59,7 @@ const SafetyMeasures = () => {
         <Table>
           <TableHead>
             <TableRow>
-              {safetyMeasuresText.tableData.columns.map((column, index) => (
+              {safetyText.tableData.columns.map((column, index) => (
                 <StyledTableCellHeader key={index}>
                   {column}
                 </StyledTableCellHeader>
@@ -67,7 +67,7 @@ const SafetyMeasures = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {safetyMeasuresText.tableData.rows.map((row, index) => (
+            {safetyText.tableData.rows.map((row, index) => (
               <TableRow key={index}>
                 {row.map((cell, idx) => (
                   <StyledTableCell key={idx}>{cell}</StyledTableCell>
@@ -83,8 +83,7 @@ const SafetyMeasures = () => {
 
 export default SafetyMeasures;
 
-// Стили внизу файла:
-
+// Стили
 const StyledContainer = styled(Container)(({ theme }) => ({
   padding: theme.spacing(6),
   backgroundColor: theme.palette.background.paper,

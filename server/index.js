@@ -1,4 +1,5 @@
-const config = require("../server/configServer.json");
+const configServer = require("../server/configServer.json");
+const configBD = require("../server/configBD.json");
 const express = require("express");
 const { Pool } = require("pg");
 const bodyParser = require("body-parser");
@@ -7,6 +8,7 @@ const fs = require("fs").promises;
 const path = require("path");
 const app = express();
 const cors = require("cors");
+const { sendVerificationEmail } = require("./emailServer");
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -16,69 +18,142 @@ app.use(express.static(path.join(__dirname, "../client/build")));
 const PORT = process.env.PORT || 5000;
 
 const pool = new Pool({
-  user: process.env.DB_USER || "postgres",
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "rgr",
-  password: process.env.DB_PASSWORD || "0000",
-  port: process.env.DB_PORT || 5432,
+  user: configBD.userBD,
+  host: configBD.hostBD,
+  database: configBD.databaseBD,
+  password: configBD.passwordBD,
+  port: configBD.portBD,
 });
 
 app.post("/api/auth/register", async (req, res) => {
   const { username, email, password } = req.body;
-  console.log(`[REGISTER] Attempt to register user: ${username}, ${email}`);
 
-  if (!username || !email || !password) {
-    console.log("[REGISTER] Validation failed - missing fields");
-    return res.status(400).json({
-      success: false,
-      message: "All fields are required",
-    });
-  }
+  if (!username || !email || !password)
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields required" });
 
   try {
-    // Проверяем, существует ли пользователь с таким email
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
     );
+    if (existingUser.rows.length > 0)
+      return res
+        .status(400)
+        .json({ success: false, message: "User already exists" });
 
-    if (existingUser.rows.length > 0) {
-      console.log(`[REGISTER] User with email ${email} already exists`);
-      return res.status(400).json({
-        success: false,
-        message: "User already exists",
-      });
-    }
-
-    // Хешируем пароль
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("[REGISTER] Password hashed successfully");
+    const code = generateCode();
+    const now = new Date();
 
-    // Создаем нового пользователя с ролью по умолчанию (предположим, что role_id=1 - обычный пользователь)
     const newUser = await pool.query(
-      `INSERT INTO users (username, email, password_hash, role_id) 
-       VALUES ($1, $2, $3, 1) 
-       RETURNING user_id, username, email, created_at`,
-      [username, email, hashedPassword]
+      `INSERT INTO users (username, email, password_hash, role_id, verification_code, code_sent_at, is_verified)
+       VALUES ($1, $2, $3, 1, $4, $5, false)
+       RETURNING user_id, username, email`,
+      [username, email, hashedPassword, code, now]
     );
 
-    console.log(
-      `[REGISTER] User created successfully: ${newUser.rows[0].user_id}`
-    );
-    res.status(201).json({
-      success: true,
-      user: newUser.rows[0],
-    });
+    await sendVerificationEmail(email, code);
+
+    return res
+      .status(201)
+      .json({ success: true, message: "Verification code sent" });
   } catch (err) {
     console.error("[REGISTER] Error:", err.message);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Server error during registration",
+      message: "Registration error",
       error: err.message,
     });
   }
 });
+app.post("/api/auth/verify-email", async (req, res) => {
+  const { email, code } = req.body;
 
+  if (!email || !code)
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and code required" });
+
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
+    const user = result.rows[0];
+
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+
+    if (user.is_verified)
+      return res
+        .status(400)
+        .json({ success: false, message: "Already verified" });
+
+    if (user.verification_code !== code)
+      return res.status(400).json({ success: false, message: "Invalid code" });
+
+    await pool.query(
+      "UPDATE users SET is_verified = true, verification_code = NULL WHERE email = $1",
+      [email]
+    );
+
+    return res.json({
+      success: true,
+      message: "Email verified",
+      user: {
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error("[VERIFY] Error:", err.message);
+    return res
+      .status(500)
+      .json({ success: false, message: "Verification failed" });
+  }
+});
+app.post("/api/auth/resend-code", async (req, res) => {
+  const { email } = req.body;
+  if (!email)
+    return res.status(400).json({ success: false, message: "Email required" });
+
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
+    const user = result.rows[0];
+
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    if (user.is_verified)
+      return res
+        .status(400)
+        .json({ success: false, message: "Already verified" });
+
+    const code = generateCode();
+    const now = new Date();
+
+    await pool.query(
+      "UPDATE users SET verification_code = $1, code_sent_at = $2 WHERE email = $3",
+      [code, now, email]
+    );
+
+    await sendVerificationEmail(email, code);
+
+    return res.json({ success: true, message: "Verification code resent" });
+  } catch (err) {
+    console.error("[RESEND CODE] Error:", err.message);
+    return res
+      .status(500)
+      .json({ success: false, message: "Error resending code" });
+  }
+});
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   console.log(`[LOGIN] Attempt to login with email: ${email}`);
@@ -326,6 +401,6 @@ app.get("/api/test", (req, res) => {
   res.json({ message: "Server is working!" });
 });
 
-app.listen(PORT, config.listenIP, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
+app.listen(configServer.port, configServer.listenIP, () => {
+  console.log(`Сервер запущен на порту ${configServer.port}`);
 });

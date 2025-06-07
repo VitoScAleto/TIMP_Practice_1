@@ -4,11 +4,15 @@ import { Box, Drawer, List, ListItem, ListItemText } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import UserMenu from "./UserMenu";
 import { useAuth } from "../Context/AuthContext";
+import { useTranslation } from "../hooks/useTranslation";
+import { useLanguage } from "../hooks/useLanguage";
 import { styled } from "@mui/material/styles";
 import { AppBar, Toolbar, Button, Typography, IconButton } from "@mui/material";
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { language } = useLanguage();
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -22,20 +26,19 @@ const Navbar = () => {
   };
 
   const drawerLinks = [
-    { text: "Главная", to: "/" },
-    { text: "Меры безопасности", to: "/safety-measures" },
-    { text: "Обучение", to: "/training" },
-    { text: "Ресурсы", to: "/resources" },
-    { text: "Обратная связь", to: "/feedback" },
+    { text: t("navbar.home"), to: "/" },
+    { text: t("navbar.safety"), to: "/safety-measures" },
+    { text: t("navbar.training"), to: "/training" },
+    { text: t("navbar.resources"), to: "/resources" },
+    { text: t("navbar.feedback"), to: "/feedback" },
   ];
 
   return (
     <StyledAppBar position="static" elevation={6}>
       <StyledToolbar>
-        <StyledTypography variant="h6">Спортивные сооружения</StyledTypography>
+        <StyledTypography variant="h6">{t("navbar.title")}</StyledTypography>
 
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          {/* Мобильное меню (гамбургер) */}
           <StyledIconButton
             edge="start"
             color="inherit"
@@ -46,7 +49,6 @@ const Navbar = () => {
             <MenuIcon fontSize="inherit" />
           </StyledIconButton>
 
-          {/* Десктопное меню */}
           <Box sx={{ display: { xs: "none", sm: "flex" }, marginRight: 3 }}>
             {drawerLinks.map(({ text, to }) => (
               <StyledButton
@@ -68,7 +70,6 @@ const Navbar = () => {
             ))}
           </Box>
 
-          {/* Авторизация */}
           {isAuthenticated ? (
             <UserMenu />
           ) : (
@@ -88,12 +89,11 @@ const Navbar = () => {
                 },
               }}
             >
-              Войти
+              {t("navbar.login")}
             </StyledButton>
           )}
         </Box>
 
-        {/* Drawer для мобильных */}
         <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
           <Box
             sx={{
@@ -114,7 +114,7 @@ const Navbar = () => {
               ))}
               {isAuthenticated && (
                 <ListItem button onClick={handleLogout}>
-                  <ListItemText primary="Выйти" />
+                  <ListItemText primary={t("navbar.logout")} />
                 </ListItem>
               )}
             </List>
@@ -127,11 +127,13 @@ const Navbar = () => {
 
 export default Navbar;
 
-// ================= СТИЛИ =================
+// ========== СТИЛИ ==========
 
 export const StyledAppBar = styled(AppBar)(({ theme }) => ({
   background:
-    "linear-gradient(90deg, rgba(25,118,210,1) 0%, rgba(21,101,192,1) 100%)",
+    theme.palette.mode === "dark"
+      ? "linear-gradient(90deg, #0d47a1 0%, #1565c0 100%)"
+      : "linear-gradient(90deg, rgba(25,118,210,1) 0%, rgba(21,101,192,1) 100%)",
   boxShadow: theme.shadows[6],
   transition: "background-color 0.4s ease, box-shadow 0.4s ease",
 }));

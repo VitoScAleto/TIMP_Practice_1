@@ -17,11 +17,14 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
-
+import { useTranslation } from "../hooks/useTranslation";
 import { styled } from "@mui/material/styles";
 
 const Feedback = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const feedbackLocales = t("feedback");
+
   const [message, setMessage] = useState("");
   const [feedbackList, setFeedbackList] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -37,8 +40,6 @@ const Feedback = () => {
       try {
         setLoading(true);
         const response = await api.get("/get/feedback");
-
-        // Преобразование полей под нужды компонента:
         const adaptedFeedback = response.data.feedback.map((item) => ({
           id: item.feed_id,
           message: item.data_feed,
@@ -46,17 +47,17 @@ const Feedback = () => {
           userId: item.user_id,
           username: item.username,
         }));
-
         setFeedbackList(adaptedFeedback);
       } catch (error) {
         console.error("Error fetching feedback:", error);
-        setError("Не удалось загрузить отзывы");
+        setError(feedbackLocales.errorLoading);
       } finally {
         setLoading(false);
       }
     };
     fetchFeedback();
   }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -81,7 +82,7 @@ const Feedback = () => {
       setMessage("");
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      setError("Не удалось отправить отзыв");
+      setError(feedbackLocales.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,7 @@ const Feedback = () => {
       setOpenDialog(false);
     } catch (err) {
       console.error("Error deleting feedback:", err);
-      setError("Не удалось удалить отзыв");
+      setError(feedbackLocales.errorLoading);
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ const Feedback = () => {
   return (
     <StyledContainer>
       <StyledTypography variant="h4" gutterBottom>
-        Обратная связь
+        {feedbackLocales.title}
       </StyledTypography>
 
       {error && (
@@ -117,7 +118,7 @@ const Feedback = () => {
         <>
           <form onSubmit={handleSubmit}>
             <TextField
-              label="Ваш отзыв"
+              label={feedbackLocales.inputLabel}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               fullWidth
@@ -131,18 +132,19 @@ const Feedback = () => {
               color="primary"
               disabled={loading}
             >
-              {loading ? "Отправка..." : "Отправить"}
+              {loading ? feedbackLocales.sending : feedbackLocales.send}
             </StyledButton>
           </form>
 
-          {/* Мои отзывы */}
           <StyledTypography variant="h5" gutterBottom sx={{ mt: 4 }}>
-            Мои отзывы
+            {feedbackLocales.myFeedback}
             <IconButton
               onClick={() => setOpenMyFeedback(!openMyFeedback)}
               disabled={loading}
               aria-label={
-                openMyFeedback ? "Скрыть мои отзывы" : "Показать мои отзывы"
+                openMyFeedback
+                  ? feedbackLocales.hideMyFeedback
+                  : feedbackLocales.showMyFeedback
               }
             >
               <ExpandMoreIcon
@@ -162,18 +164,16 @@ const Feedback = () => {
                   <ListItem
                     key={fb.id}
                     secondaryAction={
-                      <>
-                        <StyledButton
-                          color="error"
-                          onClick={() => {
-                            setDeleteId(fb.id);
-                            setOpenDialog(true);
-                          }}
-                          disabled={loading}
-                        >
-                          Удалить
-                        </StyledButton>
-                      </>
+                      <StyledButton
+                        color="error"
+                        onClick={() => {
+                          setDeleteId(fb.id);
+                          setOpenDialog(true);
+                        }}
+                        disabled={loading}
+                      >
+                        {feedbackLocales.delete}
+                      </StyledButton>
                     }
                   >
                     <StyledListItemText
@@ -201,16 +201,15 @@ const Feedback = () => {
         </>
       ) : (
         <StyledTypography sx={{ mt: 2 }}>
-          Для отправки отзыва необходимо войти в систему.
+          {feedbackLocales.loginPrompt}
         </StyledTypography>
       )}
 
-      {/* Все отзывы */}
       <StyledTypography variant="h5" gutterBottom sx={{ mt: 4 }}>
-        Все отзывы
+        {feedbackLocales.allFeedback}
       </StyledTypography>
       {loading ? (
-        <StyledTypography>Загрузка...</StyledTypography>
+        <StyledTypography>{feedbackLocales.loading}</StyledTypography>
       ) : (
         <List>
           {feedbackList.map((feedback) => (
@@ -228,12 +227,11 @@ const Feedback = () => {
         </List>
       )}
 
-      {/* Диалог удаления */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogTitle>{feedbackLocales.deleteConfirmTitle}</DialogTitle>
         <DialogContent>
           <StyledTypography>
-            Вы уверены, что хотите удалить этот отзыв?
+            {feedbackLocales.deleteConfirmMessage}
           </StyledTypography>
         </DialogContent>
         <DialogActions>
@@ -242,10 +240,10 @@ const Feedback = () => {
             color="primary"
             disabled={loading}
           >
-            Отмена
+            {feedbackLocales.cancel}
           </StyledButton>
           <StyledButton onClick={handleDelete} color="error" disabled={loading}>
-            {loading ? "Удаление..." : "Удалить"}
+            {loading ? feedbackLocales.deleting : feedbackLocales.delete}
           </StyledButton>
         </DialogActions>
       </Dialog>

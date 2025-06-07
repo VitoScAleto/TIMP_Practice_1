@@ -7,10 +7,14 @@ import animationData from "../Lottile/security.json";
 import animationData1 from "../Lottile/ball.json";
 import { useAuth } from "../Context/AuthContext";
 import { styled } from "@mui/material/styles";
-// Основной компонент страницы авторизации
+
+import { useTranslation } from "../hooks/useTranslation";
+
 const AuthPage = ({ onLogin }) => {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
@@ -28,8 +32,8 @@ const AuthPage = ({ onLogin }) => {
             textColor="primary"
             sx={AuthPageTabs}
           >
-            <Tab label="Вход" />
-            <Tab label="Регистрация" />
+            <Tab label={t("auth.login")} />
+            <Tab label={t("auth.register")} />
           </Tabs>
           <Fade in={activeTab === 0} timeout={300}>
             <div>{activeTab === 0 && <Login onLogin={onLogin} />}</div>

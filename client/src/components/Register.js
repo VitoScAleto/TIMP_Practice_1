@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Container,
   Typography,
@@ -10,8 +10,10 @@ import {
 } from "@mui/material";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
+import { useTranslation } from "../hooks/useTranslation"; // Используем ваш хук перевода
 
 const Register = () => {
+  const { t } = useTranslation(); // Используем ваш хук перевода
   const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -47,32 +49,31 @@ const Register = () => {
     let isValid = true;
 
     if (!username.trim()) {
-      newErrors.username = "Это поле обязательно для заполнения";
+      newErrors.username = t("register.requiredField");
       isValid = false;
     }
 
     if (!email.trim()) {
-      newErrors.email = "Это поле обязательно для заполнения";
+      newErrors.email = t("register.requiredField");
       isValid = false;
     } else if (!validateEmail(email)) {
-      newErrors.email = "Введите корректный email";
+      newErrors.email = t("register.invalidEmail");
       isValid = false;
     }
 
     if (!password.trim()) {
-      newErrors.password = "Это поле обязательно для заполнения";
+      newErrors.password = t("register.requiredField");
       isValid = false;
     } else if (!validatePassword(password)) {
-      newErrors.password =
-        "Пароль должен содержать минимум 8 символов, включая хотя бы одну букву и одну цифру";
+      newErrors.password = t("register.passwordRequirements");
       isValid = false;
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = "Это поле обязательно для заполнения";
+      newErrors.confirmPassword = t("register.requiredField");
       isValid = false;
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Пароли не совпадают";
+      newErrors.confirmPassword = t("register.passwordsMismatch");
       isValid = false;
     }
 
@@ -82,7 +83,6 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validate()) return;
 
     setIsLoading(true);
@@ -98,11 +98,11 @@ const Register = () => {
       if (response.data.success) {
         login(response.data.user);
       } else {
-        setErrorMessage(response.data.message || "Ошибка регистрации");
+        setErrorMessage(response.data.message || t("register.genericError"));
       }
     } catch (error) {
       console.error(error);
-      setErrorMessage("Произошла ошибка. Пожалуйста, попробуйте еще раз.");
+      setErrorMessage(t("register.genericError"));
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +116,7 @@ const Register = () => {
         if (!value.trim()) {
           setErrors((prev) => ({
             ...prev,
-            username: "Это поле обязательно для заполнения",
+            username: t("register.requiredField"),
           }));
         } else {
           setErrors((prev) => ({ ...prev, username: "" }));
@@ -128,10 +128,10 @@ const Register = () => {
         if (!value.trim()) {
           setErrors((prev) => ({
             ...prev,
-            email: "Это поле обязательно для заполнения",
+            email: t("register.requiredField"),
           }));
         } else if (!validateEmail(value)) {
-          setErrors((prev) => ({ ...prev, email: "Введите корректный email" }));
+          setErrors((prev) => ({ ...prev, email: t("register.invalidEmail") }));
         } else {
           setErrors((prev) => ({ ...prev, email: "" }));
         }
@@ -142,13 +142,12 @@ const Register = () => {
         if (!value.trim()) {
           setErrors((prev) => ({
             ...prev,
-            password: "Это поле обязательно для заполнения",
+            password: t("register.requiredField"),
           }));
         } else if (!validatePassword(value)) {
           setErrors((prev) => ({
             ...prev,
-            password:
-              "Пароль должен содержать минимум 8 символов, включая хотя бы одну букву и одну цифру",
+            password: t("register.passwordRequirements"),
           }));
         } else {
           setErrors((prev) => ({ ...prev, password: "" }));
@@ -160,12 +159,12 @@ const Register = () => {
         if (!value.trim()) {
           setErrors((prev) => ({
             ...prev,
-            confirmPassword: "Это поле обязательно для заполнения",
+            confirmPassword: t("register.requiredField"),
           }));
         } else if (value !== password) {
           setErrors((prev) => ({
             ...prev,
-            confirmPassword: "Пароли не совпадают",
+            confirmPassword: t("register.passwordsMismatch"),
           }));
         } else {
           setErrors((prev) => ({ ...prev, confirmPassword: "" }));
@@ -180,7 +179,7 @@ const Register = () => {
   return (
     <Container maxWidth="sm">
       <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-        Регистрация
+        {t("register.title")}
       </Typography>
       {errorMessage && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -191,35 +190,41 @@ const Register = () => {
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          "& .MuiTextField-root": styles.textField,
+          "& .MuiTextField-root": {
+            marginBottom: "28px",
+            "& .MuiFormHelperText-root": {
+              position: "absolute",
+              bottom: "-24px",
+              left: "0",
+              margin: 0,
+            },
+          },
         }}
       >
         <TextField
-          label="Имя"
+          label={t("register.username")}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           onBlur={() => handleBlur("username")}
           error={!!errors.username}
           helperText={errors.username}
-          sx={errors.username ? styles.error : null}
           fullWidth
           required
         />
 
         <TextField
-          label="Email"
+          label={t("register.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
           onBlur={() => handleBlur("email")}
           error={!!errors.email}
           helperText={errors.email}
-          sx={errors.email ? styles.error : null}
           fullWidth
           required
         />
 
         <TextField
-          label="Пароль"
+          label={t("register.password")}
           type="password"
           value={password}
           onChange={(e) =>
@@ -228,13 +233,12 @@ const Register = () => {
           onBlur={() => handleBlur("password")}
           error={!!errors.password}
           helperText={errors.password}
-          sx={errors.password ? styles.error : null}
           fullWidth
           required
         />
 
         <TextField
-          label="Подтверждение пароля"
+          label={t("register.confirmPassword")}
           type="password"
           value={confirmPassword}
           onChange={(e) =>
@@ -243,7 +247,6 @@ const Register = () => {
           onBlur={() => handleBlur("confirmPassword")}
           error={!!errors.confirmPassword}
           helperText={errors.confirmPassword}
-          sx={errors.confirmPassword ? styles.error : null}
           fullWidth
           required
         />
@@ -260,7 +263,7 @@ const Register = () => {
           size="large"
           sx={{ mt: 2, height: 48 }}
         >
-          {isLoading ? "Регистрация..." : "Зарегистрироваться"}
+          {isLoading ? t("register.loading") : t("register.submit")}
         </Button>
       </Box>
     </Container>
@@ -283,19 +286,10 @@ const styles = {
   },
   error: {
     "& .MuiOutlinedInput-root": {
-      "& fieldset": {
-        borderColor: "red",
-      },
-      "&:hover fieldset": {
-        borderColor: "darkred",
-      },
+      "& fieldset": { borderColor: "red" },
+      "&:hover fieldset": { borderColor: "red" },
     },
-    "& .MuiFormLabel-root": {
-      color: "red",
-    },
-    "& .MuiFormHelperText-root": {
-      color: "red",
-      fontWeight: 600,
-    },
+    "& .MuiFormLabel-root": { color: "red" },
+    "& .MuiFormHelperText-root": { color: "red" },
   },
 };

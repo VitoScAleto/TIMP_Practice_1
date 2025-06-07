@@ -1,0 +1,7 @@
+{
+  "userBD": "postgres",
+  "hostBD": "localhost",
+  "databaseBD": "rgr",
+  "passwordBD": "0000",
+  "portBD": 5432
+}
