@@ -7,52 +7,53 @@ import {
   CircularProgress,
   Box,
   Alert,
+  Card,
+  CardContent,
+  Fade,
+  Modal,
+  Paper,
+  IconButton,
 } from "@mui/material";
+import { Email, Lock, Person, Close } from "@mui/icons-material";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
-import { useTranslation } from "../hooks/useTranslation"; // Используем ваш хук перевода
+import { useTranslation } from "../hooks/useTranslation";
+import { useNavigate } from "react-router-dom";
 
 const Register = () => {
-  const { t } = useTranslation(); // Используем ваш хук перевода
+  const { t } = useTranslation();
   const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [errors, setErrors] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [showModal, setShowModal] = useState(false);
+
+  // Новый стейт для кода верификации и ошибок
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationError, setVerificationError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [resendMessage, setResendMessage] = useState("");
 
-  const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const validatePassword = (password) => {
-    const re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    return re.test(password);
-  };
+  const validatePassword = (password) =>
+    /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password);
 
   const validate = () => {
-    const newErrors = {
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    };
-
+    const newErrors = {};
     let isValid = true;
 
     if (!username.trim()) {
       newErrors.username = t("register.requiredField");
       isValid = false;
     }
-
     if (!email.trim()) {
       newErrors.email = t("register.requiredField");
       isValid = false;
@@ -60,7 +61,6 @@ const Register = () => {
       newErrors.email = t("register.invalidEmail");
       isValid = false;
     }
-
     if (!password.trim()) {
       newErrors.password = t("register.requiredField");
       isValid = false;
@@ -68,7 +68,6 @@ const Register = () => {
       newErrors.password = t("register.passwordRequirements");
       isValid = false;
     }
-
     if (!confirmPassword.trim()) {
       newErrors.confirmPassword = t("register.requiredField");
       isValid = false;
@@ -87,6 +86,9 @@ const Register = () => {
 
     setIsLoading(true);
     setErrorMessage("");
+    setResendMessage("");
+    setVerificationCode("");
+    setVerificationError("");
 
     try {
       const response = await api.post("/auth/register", {
@@ -96,7 +98,7 @@ const Register = () => {
       });
 
       if (response.data.success) {
-        login(response.data.user);
+        setShowModal(true);
       } else {
         setErrorMessage(response.data.message || t("register.genericError"));
       }
@@ -108,164 +110,224 @@ const Register = () => {
     }
   };
 
-  const handleBlur = (field) => {
-    let value;
-    switch (field) {
-      case "username":
-        value = username;
-        if (!value.trim()) {
-          setErrors((prev) => ({
-            ...prev,
-            username: t("register.requiredField"),
-          }));
-        } else {
-          setErrors((prev) => ({ ...prev, username: "" }));
-        }
-        break;
+  const handleCloseModal = () => {
+    setShowModal(false);
+    // Можно перенаправлять, если хочешь
+    // navigate("/verify-email", { state: { email } });
+  };
 
-      case "email":
-        value = email;
-        if (!value.trim()) {
-          setErrors((prev) => ({
-            ...prev,
-            email: t("register.requiredField"),
-          }));
-        } else if (!validateEmail(value)) {
-          setErrors((prev) => ({ ...prev, email: t("register.invalidEmail") }));
-        } else {
-          setErrors((prev) => ({ ...prev, email: "" }));
-        }
-        break;
+  const handleResendCode = async () => {
+    setResendMessage("");
+    try {
+      const response = await api.post("/auth/resend-code", { email });
+      if (response.data.success) {
+        setResendMessage(t("register.codeResent"));
+      } else {
+        setResendMessage(response.data.message);
+      }
+    } catch (error) {
+      setResendMessage(t("register.genericError"));
+    }
+  };
 
-      case "password":
-        value = password;
-        if (!value.trim()) {
-          setErrors((prev) => ({
-            ...prev,
-            password: t("register.requiredField"),
-          }));
-        } else if (!validatePassword(value)) {
-          setErrors((prev) => ({
-            ...prev,
-            password: t("register.passwordRequirements"),
-          }));
-        } else {
-          setErrors((prev) => ({ ...prev, password: "" }));
-        }
-        break;
+  // Новая функция для проверки кода верификации
+  const handleVerifyCode = async () => {
+    if (!verificationCode) {
+      setVerificationError(t("register.enterCodeError"));
+      return;
+    }
 
-      case "confirmPassword":
-        value = confirmPassword;
-        if (!value.trim()) {
-          setErrors((prev) => ({
-            ...prev,
-            confirmPassword: t("register.requiredField"),
-          }));
-        } else if (value !== password) {
-          setErrors((prev) => ({
-            ...prev,
-            confirmPassword: t("register.passwordsMismatch"),
-          }));
-        } else {
-          setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-        }
-        break;
+    setIsVerifying(true);
+    setVerificationError("");
+    setErrorMessage("");
 
-      default:
-        break;
+    try {
+      const response = await api.post("/auth/verify-email", {
+        email,
+        code: verificationCode,
+      });
+
+      if (response.data.success) {
+        // Успешная верификация — логиним пользователя и переходим дальше
+        login(response.data.user);
+        navigate("/dashboard");
+        setShowModal(false);
+      } else {
+        setVerificationError(
+          response.data.message || t("register.invalidCode")
+        );
+      }
+    } catch (err) {
+      setVerificationError(t("register.verificationFailed"));
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   return (
     <Container maxWidth="sm">
-      <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-        {t("register.title")}
-      </Typography>
-      {errorMessage && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {errorMessage}
-        </Alert>
-      )}
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{
-          "& .MuiTextField-root": {
-            marginBottom: "28px",
-            "& .MuiFormHelperText-root": {
-              position: "absolute",
-              bottom: "-24px",
-              left: "0",
-              margin: 0,
-            },
-          },
-        }}
-      >
-        <TextField
-          label={t("register.username")}
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onBlur={() => handleBlur("username")}
-          error={!!errors.username}
-          helperText={errors.username}
-          fullWidth
-          required
-        />
+      <Fade in timeout={500}>
+        <Card elevation={3} sx={{ p: 4, mt: 4, borderRadius: 3 }}>
+          <CardContent>
+            <Typography variant="h4" gutterBottom>
+              {t("register.title")}
+            </Typography>
 
-        <TextField
-          label={t("register.email")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
-          onBlur={() => handleBlur("email")}
-          error={!!errors.email}
-          helperText={errors.email}
-          fullWidth
-          required
-        />
+            {errorMessage && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {errorMessage}
+              </Alert>
+            )}
 
-        <TextField
-          label={t("register.password")}
-          type="password"
-          value={password}
-          onChange={(e) =>
-            setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
-          }
-          onBlur={() => handleBlur("password")}
-          error={!!errors.password}
-          helperText={errors.password}
-          fullWidth
-          required
-        />
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              noValidate
+              sx={{
+                "& .MuiTextField-root": {
+                  mb: 3,
+                },
+              }}
+            >
+              <TextField
+                label={t("register.username")}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                error={!!errors.username}
+                helperText={errors.username}
+                fullWidth
+                required
+                InputProps={{ startAdornment: <Person sx={{ mr: 1 }} /> }}
+              />
 
-        <TextField
-          label={t("register.confirmPassword")}
-          type="password"
-          value={confirmPassword}
-          onChange={(e) =>
-            setConfirmPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
-          }
-          onBlur={() => handleBlur("confirmPassword")}
-          error={!!errors.confirmPassword}
-          helperText={errors.confirmPassword}
-          fullWidth
-          required
-        />
+              <TextField
+                label={t("register.email")}
+                value={email}
+                onChange={(e) =>
+                  setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+                }
+                error={!!errors.email}
+                helperText={errors.email}
+                fullWidth
+                required
+                InputProps={{ startAdornment: <Email sx={{ mr: 1 }} /> }}
+              />
 
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          disabled={isLoading}
-          startIcon={
-            isLoading ? <CircularProgress size={20} color="inherit" /> : null
-          }
-          fullWidth
-          size="large"
-          sx={{ mt: 2, height: 48 }}
-        >
-          {isLoading ? t("register.loading") : t("register.submit")}
-        </Button>
-      </Box>
+              <TextField
+                label={t("register.password")}
+                type="password"
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+                }
+                error={!!errors.password}
+                helperText={errors.password}
+                fullWidth
+                required
+                InputProps={{ startAdornment: <Lock sx={{ mr: 1 }} /> }}
+              />
+
+              <TextField
+                label={t("register.confirmPassword")}
+                type="password"
+                value={confirmPassword}
+                onChange={(e) =>
+                  setConfirmPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+                }
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
+                fullWidth
+                required
+                InputProps={{ startAdornment: <Lock sx={{ mr: 1 }} /> }}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                size="large"
+                disabled={isLoading}
+                startIcon={
+                  isLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : null
+                }
+                sx={{ mt: 2, height: 48 }}
+              >
+                {isLoading ? t("register.loading") : t("register.submit")}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Fade>
+
+      <Modal open={showModal} onClose={handleCloseModal}>
+        <Fade in={showModal}>
+          <Paper
+            sx={{
+              maxWidth: 400,
+              mx: "auto",
+              mt: "20vh",
+              p: 4,
+              borderRadius: 3,
+              position: "relative",
+            }}
+          >
+            <IconButton
+              onClick={handleCloseModal}
+              sx={{ position: "absolute", top: 8, right: 8 }}
+            >
+              <Close />
+            </IconButton>
+            <Typography variant="h6" gutterBottom>
+              {t("register.emailConfirmationTitle")}
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              📧 {t("register.emailSentMessage", { email })}
+            </Typography>
+
+            <TextField
+              label={t("register.enterVerificationCode")}
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value.trim())}
+              error={!!verificationError}
+              helperText={verificationError}
+              fullWidth
+              sx={{ mt: 2 }}
+            />
+
+            <Button
+              variant="contained"
+              fullWidth
+              sx={{ mt: 2 }}
+              onClick={handleVerifyCode}
+              disabled={isVerifying}
+            >
+              {isVerifying ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                t("register.verifyCode")
+              )}
+            </Button>
+
+            <Button
+              variant="text"
+              fullWidth
+              sx={{ mt: 1 }}
+              onClick={handleResendCode}
+            >
+              {t("register.resendCode")}
+            </Button>
+
+            {resendMessage && (
+              <Typography variant="caption" sx={{ mt: 1, color: "gray" }}>
+                {resendMessage}
+              </Typography>
+            )}
+          </Paper>
+        </Fade>
+      </Modal>
     </Container>
   );
 };

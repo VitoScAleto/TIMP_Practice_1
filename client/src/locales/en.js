@@ -94,6 +94,9 @@ export default {
     loading: "Registering...",
     genericError: "Registration failed. Please try again.",
     success: "Registration successful!",
+    emailConfirmationTitle: "Email confirmation",
+    emailSentMessage: "Code sent",
+    resendCode: "Resend code",
   },
   navbar: {
     home: "Home",

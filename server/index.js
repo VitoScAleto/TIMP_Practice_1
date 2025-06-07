@@ -17,6 +17,9 @@ app.use(express.static(path.join(__dirname, "../client/build")));
 
 const PORT = process.env.PORT || 5000;
 
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+}
 const pool = new Pool({
   user: configBD.userBD,
   host: configBD.hostBD,
@@ -26,26 +29,40 @@ const pool = new Pool({
 });
 
 app.post("/api/auth/register", async (req, res) => {
+  console.log("[REGISTER] Incoming request body:", req.body);
+
   const { username, email, password } = req.body;
 
-  if (!username || !email || !password)
+  if (!username || !email || !password) {
+    console.log("[REGISTER] Missing fields:", { username, email, password });
     return res
       .status(400)
       .json({ success: false, message: "All fields required" });
+  }
 
   try {
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
     );
-    if (existingUser.rows.length > 0)
+    if (existingUser.rows.length > 0) {
+      console.log("[REGISTER] User already exists:", email);
       return res
         .status(400)
         .json({ success: false, message: "User already exists" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const code = generateCode();
     const now = new Date();
+
+    console.log("[REGISTER] Creating user:", {
+      username,
+      email,
+      hashedPassword,
+      code,
+      now,
+    });
 
     const newUser = await pool.query(
       `INSERT INTO users (username, email, password_hash, role_id, verification_code, code_sent_at, is_verified)
@@ -54,13 +71,16 @@ app.post("/api/auth/register", async (req, res) => {
       [username, email, hashedPassword, code, now]
     );
 
+    console.log("[REGISTER] User created with ID:", newUser.rows[0].user_id);
+
     await sendVerificationEmail(email, code);
+    console.log("[REGISTER] Verification email sent to:", email);
 
     return res
       .status(201)
       .json({ success: true, message: "Verification code sent" });
   } catch (err) {
-    console.error("[REGISTER] Error:", err.message);
+    console.error("[REGISTER] Error:", err);
     return res.status(500).json({
       success: false,
       message: "Registration error",
