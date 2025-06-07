@@ -63,18 +63,24 @@ const SettingsModal = ({ open, onClose }) => {
 
     try {
       const response = await api.put("/auth/update-username", {
-        userId: user.id,
         newUsername: name.trim(),
       });
 
       if (response.data.success) {
-        login(response.data.user);
+        const updatedUser = response.data.user;
+
+        login({
+          user_id: updatedUser.user_id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+        });
 
         updateSettings({
+          ...settings,
           theme,
           language,
-          email: user.email,
-          username: name.trim(),
+          username: updatedUser.username,
+          email: updatedUser.email,
         });
 
         setSuccess(true);

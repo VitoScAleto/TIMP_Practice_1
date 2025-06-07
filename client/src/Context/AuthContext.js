@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "../api";
 
@@ -12,13 +11,28 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const response = await api.get("/auth/me", { withCredentials: true });
+
+        if (response.data.success) {
+          const userData = response.data.user;
+          setUser({
+            id: userData.user_id,
+            username: userData.username || "",
+            email: userData.email,
+          });
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } catch (error) {
+        setIsAuthenticated(false);
+        setUser(null);
         console.error("Auth check failed:", error);
       } finally {
         setLoading(false);
       }
     };
-
     checkAuth();
   }, []);
 
@@ -31,9 +45,15 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post("/auth/logout", {}, { withCredentials: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
   };
 
   return (

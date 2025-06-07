@@ -15,7 +15,6 @@ import welcomeAnimation from "../Lottile/Welcome.json";
 import { useTranslation } from "../hooks/useTranslation";
 import { styled } from "@mui/material/styles";
 
-// Основной компонент
 const HomePage = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -141,7 +140,6 @@ const CTAButton = styled(Button)(() => ({
   marginTop: 32,
 }));
 
-// Анимации
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
   visible: (i = 1) => ({

@@ -8,8 +8,8 @@ const translations = {
 };
 
 export const useTranslation = () => {
-  const { language } = useLanguage(); // может быть undefined или "ru-RU"
-  const lang = (language || "en").slice(0, 2); // normalize to "en" or "ru"
+  const { language } = useLanguage();
+  const lang = (language || "en").slice(0, 2);
   const tObj = translations[lang] || translations.en;
 
   return {

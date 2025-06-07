@@ -18,9 +18,9 @@ export const SettingsProvider = ({ children, userEmail }) => {
 
   useEffect(() => {
     localStorage.setItem("userSettings", JSON.stringify(settings));
-    // Применяем тему
+
     document.body.setAttribute("data-theme", settings.theme);
-    // Можно также добавить класс языка для всего документа
+
     document.documentElement.lang = settings.language;
   }, [settings]);
 
@@ -31,7 +31,6 @@ export const SettingsProvider = ({ children, userEmail }) => {
     }));
   };
 
-  // Функции для изменения конкретных настроек
   const changeTheme = (theme) => {
     updateSettings({ theme });
   };

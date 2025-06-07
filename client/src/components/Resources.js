@@ -12,7 +12,7 @@ import { styled } from "@mui/material/styles";
 
 const Resources = () => {
   const { t } = useTranslation();
-  const resources = t("resources"); // локализованные данные
+  const resources = t("resources");
 
   return (
     <StyledContainer maxWidth="md">

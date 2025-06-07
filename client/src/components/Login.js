@@ -10,10 +10,10 @@ import {
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
 import { styled } from "@mui/material/styles";
-import { useTranslation } from "../hooks/useTranslation"; // Используем ваш хук перевода
+import { useTranslation } from "../hooks/useTranslation";
 
 const Login = () => {
-  const { t } = useTranslation(); // Используем ваш хук перевода
+  const { t } = useTranslation();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +36,11 @@ const Login = () => {
     setIsLoading(true);
     setLoginError("");
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post(
+        "/auth/login",
+        { email, password },
+        { withCredentials: true }
+      );
       if (response.data.success) {
         login(response.data.user);
       } else {
@@ -126,8 +130,6 @@ const Login = () => {
 };
 
 export default Login;
-
-// ================= СТИЛИ =================
 
 const StyledContainer = styled(Container)({
   maxWidth: "sm",

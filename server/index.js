@@ -9,23 +9,82 @@ const path = require("path");
 const app = express();
 const cors = require("cors");
 const { sendVerificationEmail } = require("./emailServer");
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+//FIXME: вынести
+const jwt = require("jsonwebtoken");
 
-app.use(cors());
+const JWT_SECRET = "secret_key";
+const JWT_EXPIRES_IN = "1d"; // время жизни токена
+//FIXME: вынести
+app.use(
+  cors({
+    origin: "http://localhost:3000", // адрес фронта
+    credentials: true, // позволяет передавать cookies и заголовки авторизации
+  })
+);
 app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname, "../client/build")));
 
-const PORT = process.env.PORT || 5000;
-
 function generateCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
+const authenticateToken = (req, res, next) => {
+  const token = req.cookies.token;
+  console.log("[AUTH TOKEN] Проверка токена в куки");
+
+  if (!token) {
+    console.log("[AUTH TOKEN] Токен отсутствует");
+    return res
+      .status(401)
+      .json({ success: false, message: "No token provided" });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      console.log("[AUTH TOKEN] Ошибка верификации токена:", err.message);
+      return res.status(403).json({ success: false, message: "Invalid token" });
+    }
+    console.log(`[AUTH TOKEN] Токен валиден, userId: ${decoded.userId}`);
+    req.user = decoded;
+    next();
+  });
+};
+
 const pool = new Pool({
   user: configBD.userBD,
   host: configBD.hostBD,
   database: configBD.databaseBD,
   password: configBD.passwordBD,
   port: configBD.portBD,
+});
+
+app.get("/api/auth/me", authenticateToken, async (req, res) => {
+  console.log(`[AUTH ME] Запрос данных пользователя userId=${req.user.userId}`);
+
+  try {
+    const userResult = await pool.query(
+      "SELECT user_id, username, email, created_at FROM users WHERE user_id = $1",
+      [req.user.userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.log(`[AUTH ME] Пользователь не найден userId=${req.user.userId}`);
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const user = userResult.rows[0];
+    console.log(
+      `[AUTH ME] Пользователь найден: ${user.username} (${user.email})`
+    );
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("[AUTH ME] Ошибка при получении пользователя:", err.message);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 app.post("/api/auth/register", async (req, res) => {
@@ -179,34 +238,39 @@ app.post("/api/auth/login", async (req, res) => {
   console.log(`[LOGIN] Attempt to login with email: ${email}`);
 
   try {
-    // Находим пользователя по email
     const userResult = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
     );
 
     if (userResult.rows.length === 0) {
-      console.log(`[LOGIN] User not found with email: ${email}`);
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     const user = userResult.rows[0];
-    console.log(`[LOGIN] User found: ${user.user_id}`);
 
-    // Проверяем пароль
     const validPassword = await bcrypt.compare(password, user.password_hash);
     if (!validPassword) {
-      console.log(`[LOGIN] Invalid password for user: ${user.user_id}`);
-      return res.status(400).json({
-        success: false,
-        message: "Invalid password",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid password" });
     }
 
-    console.log(`[LOGIN] Successful login for user: ${user.user_id}`);
+    const token = jwt.sign(
+      { userId: user.user_id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
     res.json({
       success: true,
       user: {
@@ -226,23 +290,23 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-app.put("/api/auth/update-username", async (req, res) => {
-  const { userId, newUsername } = req.body;
-  console.log(userId, newUsername);
+app.put("/api/auth/update-username", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  const { newUsername } = req.body;
+
   console.log(
     `[UPDATE USERNAME] Request from user ${userId} to change username to ${newUsername}`
   );
 
-  if (!userId || !newUsername || !newUsername.trim()) {
-    console.log("[UPDATE USERNAME] Validation failed - missing fields");
+  if (!newUsername || !newUsername.trim()) {
+    console.log("[UPDATE USERNAME] Validation failed - missing newUsername");
     return res.status(400).json({
       success: false,
-      message: "User ID and new username are required",
+      message: "New username is required",
     });
   }
 
   try {
-    // Проверяем, существует ли пользователь
     const userResult = await pool.query(
       "SELECT * FROM users WHERE user_id = $1",
       [userId]
@@ -256,7 +320,6 @@ app.put("/api/auth/update-username", async (req, res) => {
       });
     }
 
-    // Обновляем имя пользователя
     const updatedUser = await pool.query(
       `UPDATE users SET username = $1 
        WHERE user_id = $2 
@@ -307,36 +370,28 @@ app.get("/api/get/feedback", async (req, res) => {
     });
   }
 });
-app.post("/api/post/feedback", async (req, res) => {
-  const { userId, message } = req.body;
-  console.log(
-    `[CREATE FEEDBACK] Request from user ${userId} to create feedback`
-  );
+app.post("/api/post/feedback", authenticateToken, async (req, res) => {
+  const { message } = req.body;
+  const userId = req.user.userId;
 
-  if (!userId || !message || !message.trim()) {
-    console.log("[CREATE FEEDBACK] Validation failed - missing fields");
-    return res.status(400).json({
-      success: false,
-      message: "User ID and message are required",
-    });
+  if (!message || !message.trim()) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Message is required" });
   }
 
   try {
-    // Проверяем, существует ли пользователь
     const userResult = await pool.query(
       "SELECT * FROM users WHERE user_id = $1",
       [userId]
     );
 
     if (userResult.rows.length === 0) {
-      console.log(`[CREATE FEEDBACK] User not found: ${userId}`);
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    // Создаем отзыв
     const newFeedback = await pool.query(
       `INSERT INTO feedback (user_id_feed, data_feed) 
        VALUES ($1, $2) 
@@ -344,9 +399,6 @@ app.post("/api/post/feedback", async (req, res) => {
       [userId, message.trim()]
     );
 
-    console.log(
-      `[CREATE FEEDBACK] Feedback created with ID: ${newFeedback.rows[0].feed_id}`
-    );
     res.status(201).json({
       success: true,
       feedback: {
@@ -357,65 +409,49 @@ app.post("/api/post/feedback", async (req, res) => {
     });
   } catch (err) {
     console.error("[CREATE FEEDBACK] Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error while creating feedback",
-      error: err.message,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 });
-app.delete("/api/delete/feedback/:id", async (req, res) => {
+app.delete("/api/delete/feedback/:id", authenticateToken, async (req, res) => {
   const feedbackId = req.params.id;
-  const userId = req.query.userId;
-  console.log(
-    `[DELETE FEEDBACK] Request to delete feedback ${feedbackId} by user ${userId}`
-  );
-
-  if (!feedbackId || !userId) {
-    console.log("[DELETE FEEDBACK] Validation failed - missing fields");
-    return res.status(400).json({
-      success: false,
-      message: "Feedback ID and User ID are required",
-    });
-  }
+  const userId = req.user.userId;
 
   try {
-    // Проверяем, существует ли отзыв и принадлежит ли он пользователю
-    const feedbackResult = await pool.query(
-      `SELECT * FROM feedback 
-       WHERE feed_id = $1 AND user_id_feed = $2`,
+    const result = await pool.query(
+      `SELECT * FROM feedback WHERE feed_id = $1 AND user_id_feed = $2`,
       [feedbackId, userId]
     );
 
-    if (feedbackResult.rows.length === 0) {
-      console.log(
-        `[DELETE FEEDBACK] Feedback not found or not owned by user: ${feedbackId}`
-      );
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Feedback not found or you don't have permission to delete it",
+        message: "Feedback not found or not owned by you",
       });
     }
 
-    // Удаляем отзыв
     await pool.query("DELETE FROM feedback WHERE feed_id = $1", [feedbackId]);
 
-    console.log(
-      `[DELETE FEEDBACK] Feedback deleted successfully: ${feedbackId}`
-    );
-    res.json({
-      success: true,
-      message: "Feedback deleted successfully",
-    });
+    res.json({ success: true, message: "Feedback deleted" });
   } catch (err) {
     console.error("[DELETE FEEDBACK] Error:", err.message);
-    res.status(500).json({
-      success: false,
-      message: "Server error while deleting feedback",
-      error: err.message,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: err.message });
   }
 });
+
+app.post("/api/auth/logout", (req, res) => {
+  console.log("LOGOUT CALLED");
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "Lax",
+    secure: false,
+  });
+  res.json({ success: true, message: "Вы вышли из системы" });
+});
+
 app.get("/api/test", (req, res) => {
   console.log("Test route hit");
   res.json({ message: "Server is working!" });

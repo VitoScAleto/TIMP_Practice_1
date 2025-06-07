@@ -1,15 +1,15 @@
 const nodemailer = require("nodemailer");
-
+//FIXME: вынести
 const transporter = nodemailer.createTransport({
   host: "smtp.yandex.ru",
   port: 465,
   secure: true,
   auth: {
     user: "vitalya1markovchi@yandex.ru",
-    pass: "zbaafylzmjzlzwsv", // не обычный пароль, а App Password
+    pass: "zbaafylzmjzlzwsv",
   },
 });
-
+//FIXME: вынести
 const sendVerificationEmail = async (email, code) => {
   const mailOptions = {
     from: `"Your App" <vitalya1markovchi@yandex.ru>`,

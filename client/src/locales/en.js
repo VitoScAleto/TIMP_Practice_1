@@ -322,4 +322,14 @@ export default {
     },
   ],
   titlePageTraining: "Education and training",
+  footer: {
+    name: "Vitaliy Pushkarev",
+    email: "Email:",
+    education:
+      "Novosibirsk State Technical University, Faculty of Automation and Computer Engineering, Specialty: Information Security of Automated Systems, Group: ABs-323",
+    github: "GitHub",
+    vk: "VK",
+    telegramQR: "Telegram QR",
+    projectName: "Sports Facilities",
+  },
 };

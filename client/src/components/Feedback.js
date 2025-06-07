@@ -64,10 +64,11 @@ const Feedback = () => {
 
     try {
       setLoading(true);
-      const response = await api.post("/post/feedback", {
-        message,
-        userId: user.id,
-      });
+      const response = await api.post(
+        "/post/feedback",
+        { message }, // Только message
+        { withCredentials: true }
+      );
 
       const fb = response.data.feedback;
       const newFeedbackItem = {
@@ -91,7 +92,9 @@ const Feedback = () => {
   const handleDelete = async () => {
     try {
       setLoading(true);
-      await api.delete(`/delete/feedback/${deleteId}?userId=${user.id}`);
+      await api.delete(`/delete/feedback/${deleteId}`, {
+        withCredentials: true,
+      });
       setFeedbackList(feedbackList.filter((fb) => fb.id !== deleteId));
       setOpenDialog(false);
     } catch (err) {

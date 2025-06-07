@@ -31,7 +31,6 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showModal, setShowModal] = useState(false);
 
-  // Новый стейт для кода верификации и ошибок
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationError, setVerificationError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -91,11 +90,15 @@ const Register = () => {
     setVerificationError("");
 
     try {
-      const response = await api.post("/auth/register", {
-        username,
-        email,
-        password,
-      });
+      const response = await api.post(
+        "/auth/register",
+        {
+          username,
+          email,
+          password,
+        },
+        { withCredentials: true }
+      );
 
       if (response.data.success) {
         setShowModal(true);
@@ -110,16 +113,14 @@ const Register = () => {
     }
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    // Можно перенаправлять, если хочешь
-    // navigate("/verify-email", { state: { email } });
-  };
-
   const handleResendCode = async () => {
     setResendMessage("");
     try {
-      const response = await api.post("/auth/resend-code", { email });
+      const response = await api.post(
+        "/auth/resend-code",
+        { email },
+        { withCredentials: true }
+      );
       if (response.data.success) {
         setResendMessage(t("register.codeResent"));
       } else {
@@ -130,7 +131,10 @@ const Register = () => {
     }
   };
 
-  // Новая функция для проверки кода верификации
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
   const handleVerifyCode = async () => {
     if (!verificationCode) {
       setVerificationError(t("register.enterCodeError"));
@@ -142,13 +146,16 @@ const Register = () => {
     setErrorMessage("");
 
     try {
-      const response = await api.post("/auth/verify-email", {
-        email,
-        code: verificationCode,
-      });
+      const response = await api.post(
+        "/auth/verify-email",
+        {
+          email,
+          code: verificationCode,
+        },
+        { withCredentials: true }
+      );
 
       if (response.data.success) {
-        // Успешная верификация — логиним пользователя и переходим дальше
         login(response.data.user);
         navigate("/dashboard");
         setShowModal(false);
