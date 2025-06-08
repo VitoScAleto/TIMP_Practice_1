@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
             id: userData.user_id,
             username: userData.username || "",
             email: userData.email,
+            role: userData.role,
           });
           setIsAuthenticated(true);
         } else {
@@ -109,6 +110,10 @@ export const AuthProvider = ({ children }) => {
         user,
         isAuthenticated,
         loading,
+        isAdmin: user?.role === "admin",
+        isOperator: user?.role === "operator",
+        isInspector: user?.role === "inspector",
+        hasRole: (role) => user?.role === role,
         login,
         logout,
         requestPasswordReset,

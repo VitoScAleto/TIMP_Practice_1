@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { AuthProvider, useAuth } from "./Context/AuthContext";
 import { SettingsProvider } from "./Context/SettingsContext";
 
@@ -12,15 +18,42 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import QrTicketsPage from "./components/QrTicketsPage";
 import ResetPasswordPage from "./components/ResetPasswordPage";
+import AdminPanelMain from "./components/admin/adminPanelMain";
+import OperatorPanel from "./components/operator/operatorPanelMain";
+import InspectorView from "./components/inspector/inspectorPanelMain";
+import FacilityList from "./components/admin/FacilityPage";
+import EventList from "./components/admin/EventPage";
+import SectorManager from "./components/admin/SectorPage";
+import AdminMap from "./components/admin/MapPage";
+
+const RoleBasedRoute = ({
+  role,
+  requiredRole,
+  element,
+  fallbackPath = "/",
+}) => {
+  const { user } = useAuth();
+
+  if (user?.role === requiredRole) {
+    return element;
+  }
+  return <Navigate to={fallbackPath} replace />;
+};
 
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) return <div>Загрузка...</div>;
 
+  // Проверяем, не админский ли это путь
+  const isAdminPath = location.pathname.startsWith("/admin");
+
   return (
-    <BrowserRouter>
-      {isAuthenticated && <Navbar />}
+    <>
+      {/* Показываем обычный Navbar только если не в админке и если авторизованы */}
+      {!isAdminPath && isAuthenticated && <Navbar />}
+
       <Routes>
         <Route
           path="/"
@@ -28,6 +61,45 @@ const AppContent = () => {
             isAuthenticated ? <HomePage /> : <Navigate to="/auth" replace />
           }
         />
+
+        <Route
+          path="/admin"
+          element={
+            <RoleBasedRoute
+              requiredRole="admin"
+              element={<AdminPanelMain />}
+              fallbackPath="/"
+            />
+          }
+        >
+          <Route index element={<Navigate to="/admin/facilities" replace />} />
+          <Route path="facilities" element={<FacilityList />} />
+          <Route path="events" element={<EventList />} />
+          <Route path="sectors" element={<SectorManager />} />
+          <Route path="map" element={<AdminMap />} />
+        </Route>
+
+        <Route
+          path="/operator"
+          element={
+            <RoleBasedRoute
+              requiredRole="operator"
+              element={<OperatorPanel />}
+              fallbackPath="/"
+            />
+          }
+        />
+        <Route
+          path="/inspector"
+          element={
+            <RoleBasedRoute
+              requiredRole="inspector"
+              element={<InspectorView />}
+              fallbackPath="/"
+            />
+          }
+        />
+        {/* Общие маршруты */}
         <Route
           path="/safety-measures"
           element={
@@ -38,6 +110,7 @@ const AppContent = () => {
             )
           }
         />
+
         <Route
           path="/training"
           element={
@@ -86,15 +159,18 @@ const AppContent = () => {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
       <Footer />
-    </BrowserRouter>
+    </>
   );
 };
 
 const App = () => (
   <AuthProvider>
     <SettingsProvider>
-      <AppContent />
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
     </SettingsProvider>
   </AuthProvider>
 );

@@ -55,7 +55,66 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+app.get("/api/facilities", async (req, res) => {
+  console.log(
+    "[GET /api/facilities] Запрос на получение списка спортивных сооружений"
+  );
+  try {
+    const result = await pool.query(
+      "SELECT * FROM sportfacilities ORDER BY fac_id ASC"
+    );
+    console.log(
+      `[GET /api/facilities] Успешно получено ${result.rowCount} объектов`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[GET /api/facilities] Ошибка при получении объектов:", err);
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при получении объектов",
+    });
+  }
+});
 
+// --- Защищённый роут: добавление нового спортивного сооружения (требуется авторизация) ---
+app.post("/api/facilities", authenticateToken, async (req, res) => {
+  console.log(
+    "[POST /api/facilities] Запрос на добавление нового спортивного сооружения"
+  );
+  console.log("[POST /api/facilities] Пользователь:", req.user);
+
+  const { name, address, latitude, longitude } = req.body;
+
+  if (
+    !name ||
+    !address ||
+    typeof latitude !== "number" ||
+    typeof longitude !== "number"
+  ) {
+    console.warn("[POST /api/facilities] Некорректные данные:", req.body);
+    return res
+      .status(400)
+      .json({ success: false, message: "Некорректные данные" });
+  }
+
+  try {
+    const query =
+      "INSERT INTO sportfacilities (name, address, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING *";
+    const values = [name, address, latitude, longitude];
+    const result = await pool.query(query, values);
+    console.log(
+      "[POST /api/facilities] Успешно добавлено сооружение с id:",
+      result.rows[0].fac_id
+    );
+    res.json({ success: true, facility: result.rows[0] });
+  } catch (err) {
+    console.error("[POST /api/facilities] Ошибка при добавлении объекта:", err);
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при добавлении объекта",
+    });
+  }
+});
 const pool = new Pool({
   user: configBD.userBD,
   host: configBD.hostBD,
@@ -64,12 +123,89 @@ const pool = new Pool({
   port: configBD.portBD,
 });
 
+app.put("/api/facilities/:id", authenticateToken, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const { name, address, latitude, longitude } = req.body;
+
+  if (
+    !id ||
+    !name ||
+    !address ||
+    typeof latitude !== "number" ||
+    typeof longitude !== "number"
+  ) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Некорректные данные" });
+  }
+
+  try {
+    const query =
+      "UPDATE sportfacilities SET name=$1, address=$2, latitude=$3, longitude=$4 WHERE fac_id=$5 RETURNING *";
+    const values = [name, address, latitude, longitude, id];
+    const result = await pool.query(query, values);
+
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Объект не найден" });
+    }
+
+    res.json({ success: true, facility: result.rows[0] });
+  } catch (err) {
+    console.error(
+      "[PUT /api/facilities/:id] Ошибка при обновлении объекта:",
+      err
+    );
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при обновлении объекта",
+    });
+  }
+});
+
+// --- Удаление спортивного сооружения (DELETE /api/facilities/:id) ---
+app.delete("/api/facilities/:id", authenticateToken, async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Некорректный ID" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM sportfacilities WHERE fac_id=$1 RETURNING *",
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Объект не найден" });
+    }
+
+    res.json({ success: true, message: "Объект удалён" });
+  } catch (err) {
+    console.error(
+      "[DELETE /api/facilities/:id] Ошибка при удалении объекта:",
+      err
+    );
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при удалении объекта",
+    });
+  }
+});
+
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
   console.log(`[AUTH ME] Запрос данных пользователя userId=${req.user.userId}`);
 
   try {
     const userResult = await pool.query(
-      "SELECT user_id, username, email, created_at FROM users WHERE user_id = $1",
+      `SELECT u.user_id, u.username, u.email, u.created_at, r.role_name 
+       FROM users u
+       JOIN roles r ON u.role_id = r.role_id
+       WHERE u.user_id = $1`,
       [req.user.userId]
     );
 
@@ -82,9 +218,18 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 
     const user = userResult.rows[0];
     console.log(
-      `[AUTH ME] Пользователь найден: ${user.username} (${user.email})`
+      `[AUTH ME] Пользователь найден: ${user.username} (${user.email}), роль: ${user.role_name}`
     );
-    res.json({ success: true, user });
+    res.json({
+      success: true,
+      user: {
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email,
+        created_at: user.created_at,
+        role: user.role_name,
+      },
+    });
   } catch (err) {
     console.error("[AUTH ME] Ошибка при получении пользователя:", err.message);
     res.status(500).json({ success: false, message: "Server error" });
@@ -319,7 +464,7 @@ app.post("/api/auth/verify-reset-code", async (req, res) => {
 
     const codeSentAt = user.code_sent_at;
     const now = new Date();
-    const codeAge = (now - new Date(codeSentAt)) / (1000 * 60); // in minutes
+    const codeAge = (now - new Date(codeSentAt)) / (1000 * 60);
     console.log("[VERIFY RESET CODE] Code age (min):", codeAge);
 
     if (codeAge > 60) {
