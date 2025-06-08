@@ -55,7 +55,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Password reset functions
   const requestPasswordReset = async (email) => {
     try {
       const response = await api.post("/auth/request-password-reset", {

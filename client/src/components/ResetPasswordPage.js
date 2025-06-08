@@ -52,11 +52,10 @@ const ResetPasswordPage = () => {
 
   const navigate = useNavigate();
 
-  // Валидации с учетом новой локализации
-
   const validateEmail = (value) => {
     if (!value) return t("resetPassword.emailRequired");
-    if (/[а-яА-Я\s]/.test(value)) return t("errors.email_latin_only"); // здесь можно заменить или расширить локализацию, если нужно
+    if (/[а-яА-Я\s]/.test(value))
+      return t("resetPassword.errors.email_latin_only");
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) return t("errors.email_invalid");
     return "";
@@ -69,15 +68,17 @@ const ResetPasswordPage = () => {
   };
 
   const validatePassword = (value) => {
-    if (!value) return t("errors.password_required");
+    if (!value) return t("resetPassword.errors.password_required");
     if (value.length < 6) return t("resetPassword.passwordTooShort");
-    if (/[а-яА-Я\s]/.test(value)) return t("errors.password_latin_only");
-    if (!/[0-9]/.test(value)) return t("errors.password_digit_required");
+    if (/[а-яА-Я\s]/.test(value))
+      return t("resetPassword.errors.password_latin_only");
+    if (!/[0-9]/.test(value))
+      return t("resetPassword.errors.password_digit_required");
     return "";
   };
 
   const validateConfirmPassword = (value) => {
-    if (!value) return t("errors.confirm_password_required");
+    if (!value) return t("resetPassword.errors.confirm_password_required");
     if (value !== newPassword) return t("resetPassword.passwordsDontMatch");
     return "";
   };
@@ -225,7 +226,7 @@ const ResetPasswordPage = () => {
           {step === 0 && (
             <>
               <TextField
-                label={t("labels.email")}
+                label={t("resetPassword.labels.email")}
                 type="email"
                 fullWidth
                 required
@@ -250,7 +251,9 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 sx={{ mt: 2 }}
               >
-                {loading ? t("buttons.sending") : t("resetPassword.sendCode")}
+                {loading
+                  ? t("resetPassword.buttons.sending")
+                  : t("resetPassword.sendCode")}
               </Button>
             </>
           )}
@@ -258,7 +261,7 @@ const ResetPasswordPage = () => {
           {step === 1 && (
             <>
               <TextField
-                label={t("labels.code_from_email")}
+                label={t("resetPassword.labels.code_from_email")}
                 type="text"
                 fullWidth
                 required
@@ -283,7 +286,9 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 sx={{ mt: 2 }}
               >
-                {loading ? t("buttons.verifying") : t("buttons.confirm_code")}
+                {loading
+                  ? t("resetPassword.buttons.verifying")
+                  : t("resetPassword.buttons.confirm_code")}
               </Button>
             </>
           )}
@@ -291,7 +296,7 @@ const ResetPasswordPage = () => {
           {step === 2 && (
             <>
               <TextField
-                label={t("labels.new_password")}
+                label={t("resetPassword.labels.new_password")}
                 type={showPassword ? "text" : "password"}
                 fullWidth
                 required
@@ -320,7 +325,7 @@ const ResetPasswordPage = () => {
                 }}
               />
               <TextField
-                label={t("labels.confirm_password")}
+                label={t("resetPassword.labels.confirm_password")}
                 type={showConfirmPassword ? "text" : "password"}
                 fullWidth
                 required
@@ -363,7 +368,7 @@ const ResetPasswordPage = () => {
                 sx={{ mt: 2 }}
               >
                 {loading
-                  ? t("buttons.resetting")
+                  ? t("resetPassword.buttons.resetting")
                   : t("resetPassword.resetButton")}
               </Button>
             </>

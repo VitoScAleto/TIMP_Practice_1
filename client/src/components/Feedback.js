@@ -66,7 +66,7 @@ const Feedback = () => {
       setLoading(true);
       const response = await api.post(
         "/post/feedback",
-        { message }, // Только message
+        { message },
         { withCredentials: true }
       );
 

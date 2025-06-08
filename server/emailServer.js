@@ -1,6 +1,5 @@
 const nodemailer = require("nodemailer");
 
-// Конфигурация транспорта (лучше вынести в конфиг)
 const transporter = nodemailer.createTransport({
   host: "smtp.yandex.ru",
   port: 465,

@@ -350,7 +350,7 @@ export default {
     passwordLatinOnly:
       "Password must contain only Latin characters, without spaces or Cyrillic characters",
     passwordDigitRequired: "Password must contain at least one digit",
-    confirmPasswordRequired: "Confirm password",
+    confirmPasswordRequired: "Confirm password is required",
     passwordsDontMatch: "Passwords do not match",
     requestError: "Error sending code.",
     codeInvalidOrExpired: "Incorrect or expired code.",
@@ -358,7 +358,7 @@ export default {
     success: "Password successfully updated. Redirecting...",
     sendCode: "Send code",
     codeSent: "The code was sent to your email.",
-    verificationCode: "Code from email",
+    code_from_email: "Code from email",
     verifyCode: "Confirm code",
     newPassword: "New password",
     confirmPassword: "Confirm password",
@@ -366,5 +366,33 @@ export default {
     sending: "Sending...",
     verifying: "Checking...",
     resetting: "Resetting...",
+
+    labels: {
+      email: "Email",
+      code_from_email: "Code from email",
+      new_password: "New password",
+      confirm_password: "Confirm password",
+    },
+
+    errors: {
+      email_latin_only:
+        "Email must contain only Latin characters, without spaces",
+      email_invalid: "Incorrect email",
+      password_required: "Password is required",
+      password_too_short: "Password must be at least 6 characters long",
+      password_latin_only:
+        "Password must contain only Latin characters, without spaces or Cyrillic characters",
+      password_digit_required: "Password must contain at least one digit",
+      confirm_password_required: "Confirm password is required",
+      passwords_dont_match: "Passwords do not match",
+    },
+    buttons: {
+      send_code: "Send code",
+      confirming_code: "Confirm code",
+      resetting_password: "Reset password",
+      sending: "Sending...",
+      verifying: "Checking...",
+      resetting: "Resetting...",
+    },
   },
 };

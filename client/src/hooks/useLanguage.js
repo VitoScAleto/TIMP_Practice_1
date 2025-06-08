@@ -1,17 +1,6 @@
 import { useSettings } from "../Context/SettingsContext";
 import { useEffect } from "react";
 
-/**
-
- * @returns {{
- *   language: string,
- *   setLanguage: (lang: string) => void,
- *   isRussian: boolean,
- *   isEnglish: boolean,
- *   toggleLanguage: () => void,
- *   availableLanguages: Array<{code: string, name: string}>
- * }}
- */
 export const useLanguage = () => {
   const { settings, changeLanguage } = useSettings();
 

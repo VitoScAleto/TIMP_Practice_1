@@ -22,7 +22,6 @@ const AppContent = () => {
     <BrowserRouter>
       {isAuthenticated && <Navbar />}
       <Routes>
-        {/* Доступ только для авторизованных */}
         <Route
           path="/"
           element={
@@ -68,7 +67,6 @@ const AppContent = () => {
           }
         />
 
-        {/* Доступ только для НЕавторизованных */}
         <Route
           path="/auth"
           element={
@@ -86,7 +84,6 @@ const AppContent = () => {
           }
         />
 
-        {/* Редирект на главную при ошибочном пути */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />

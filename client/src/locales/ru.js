@@ -362,6 +362,7 @@ export default {
   },
   resetPassword: {
     title: "Восстановление пароля",
+
     emailRequired: "Email обязателен",
     emailLatinOnly: "Email должен содержать только латиницу, без пробелов",
     emailInvalid: "Некорректный email",
@@ -378,15 +379,33 @@ export default {
     codeInvalidOrExpired: "Неверный или истёкший код.",
     resetError: "Не удалось сбросить пароль.",
     success: "Пароль успешно обновлён. Перенаправление...",
-    sendCode: "Отправить код",
-    codeSent: "Код был отправлен на вашу почту.",
-    verificationCode: "Код из письма",
-    verifyCode: "Подтвердить код",
-    newPassword: "Новый пароль",
-    confirmPassword: "Подтвердите пароль",
-    resetButton: "Сбросить пароль",
-    sending: "Отправка...",
-    verifying: "Проверка...",
-    resetting: "Сброс...",
+
+    labels: {
+      email: "Email",
+      code_from_email: "Код из письма",
+      new_password: "Новый пароль",
+      confirm_password: "Подтвердите пароль",
+    },
+
+    errors: {
+      email_latin_only: "Email должен содержать только латиницу, без пробелов",
+      email_invalid: "Некорректный email",
+      password_required: "Пароль обязателен",
+      password_too_short: "Пароль должен быть не менее 6 символов",
+      password_latin_only:
+        "Пароль должен содержать только латиницу, без пробелов и кириллицы",
+      password_digit_required: "Пароль должен содержать хотя бы одну цифру",
+      confirm_password_required: "Подтвердите пароль",
+      passwords_dont_match: "Пароли не совпадают",
+    },
+
+    buttons: {
+      send_code: "Отправить код",
+      confirm_code: "Подтвердить код",
+      reset_password: "Сбросить пароль",
+      sending: "Отправка...",
+      verifying: "Проверка...",
+      resetting: "Сброс...",
+    },
   },
 };
