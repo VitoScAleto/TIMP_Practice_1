@@ -1,22 +1,32 @@
 import React, { useState } from "react";
 import {
-  Box,
-  CircularProgress,
   Container,
-  Button,
-  TextField,
   Typography,
+  TextField,
+  Button,
+  CircularProgress,
+  Box,
+  Alert,
+  Card,
+  CardContent,
+  Fade,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
+import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
 import { styled } from "@mui/material/styles";
 import { useTranslation } from "../hooks/useTranslation";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const { t } = useTranslation();
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ email: false, password: false });
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -43,11 +53,12 @@ const Login = () => {
       );
       if (response.data.success) {
         login(response.data.user);
+        navigate("/dashboard");
       } else {
         setLoginError(response.data.message || t("login.invalidCredentials"));
       }
     } catch (error) {
-      console.error("Ошибка входа:", error);
+      console.error("Login error:", error);
       setLoginError(error.response?.data?.message || t("login.genericError"));
     } finally {
       setIsLoading(false);
@@ -61,98 +72,98 @@ const Login = () => {
     }));
   };
 
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <StyledContainer maxWidth="sm">
-      <StyledTypography variant="h4" gutterBottom>
-        {t("login.title")}
-      </StyledTypography>
-      {loginError && (
-        <Box sx={{ color: "error.main", mb: 2, textAlign: "center" }}>
-          {loginError}
-        </Box>
-      )}
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{
-          "& .MuiTextField-root": {
-            marginBottom: "28px",
-            "& .MuiFormHelperText-root": {
-              position: "absolute",
-              bottom: "-24px",
-              left: "0",
-              margin: 0,
-            },
-          },
-        }}
-      >
-        <StyledTextField
-          label={t("login.email")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))}
-          onBlur={() => handleBlur("email")}
-          error={errors.email}
-          helperText={errors.email && t("login.requiredField")}
-          fullWidth
-          required
-        />
+    <Container maxWidth="sm">
+      <Fade in timeout={500}>
+        <Card elevation={3} sx={{ p: 4, mt: 4, borderRadius: 3 }}>
+          <CardContent>
+            <Typography variant="h4" gutterBottom>
+              {t("login.title")}
+            </Typography>
 
-        <StyledTextField
-          label={t("login.password")}
-          type="password"
-          value={password}
-          onChange={(e) =>
-            setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
-          }
-          onBlur={() => handleBlur("password")}
-          error={errors.password}
-          helperText={errors.password && t("login.requiredField")}
-          fullWidth
-          required
-        />
+            {loginError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {loginError}
+              </Alert>
+            )}
 
-        <StyledButton
-          type="submit"
-          variant="contained"
-          color="primary"
-          disabled={isLoading}
-          startIcon={
-            isLoading ? <CircularProgress size={20} color="inherit" /> : null
-          }
-          fullWidth
-          size="large"
-        >
-          {isLoading ? t("login.loggingIn") : t("login.submit")}
-        </StyledButton>
-      </Box>
-    </StyledContainer>
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              sx={{
+                "& .MuiTextField-root": {
+                  mb: 3,
+                },
+              }}
+            >
+              <TextField
+                label={t("login.email")}
+                value={email}
+                onChange={(e) =>
+                  setEmail(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+                }
+                onBlur={() => handleBlur("email")}
+                error={!!errors.email}
+                helperText={errors.email && t("login.requiredField")}
+                fullWidth
+                required
+                InputProps={{ startAdornment: <Email sx={{ mr: 1 }} /> }}
+              />
+
+              <TextField
+                label={t("login.password")}
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
+                }
+                onBlur={() => handleBlur("password")}
+                error={!!errors.password}
+                helperText={errors.password && t("login.requiredField")}
+                fullWidth
+                required
+                InputProps={{
+                  startAdornment: <Lock sx={{ mr: 1 }} />,
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleClickShowPassword}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={isLoading}
+                startIcon={
+                  isLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : null
+                }
+                fullWidth
+                size="large"
+                sx={{ mt: 2, height: 48 }}
+              >
+                {isLoading ? t("login.loggingIn") : t("login.submit")}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Fade>
+    </Container>
   );
 };
 
 export default Login;
-
-const StyledContainer = styled(Container)({
-  maxWidth: "sm",
-  marginTop: "20px",
-});
-
-const StyledTypography = styled(Typography)({
-  marginBottom: "28px",
-});
-
-const StyledTextField = styled(TextField)(({ error }) => ({
-  marginBottom: "28px",
-  ...(error && {
-    "& .MuiOutlinedInput-root": {
-      "& fieldset": { borderColor: "red" },
-      "&:hover fieldset": { borderColor: "red" },
-    },
-    "& .MuiFormLabel-root": { color: "red" },
-    "& .MuiFormHelperText-root": { color: "red" },
-  }),
-}));
-
-const StyledButton = styled(Button)({
-  marginTop: "16px",
-  height: "48px",
-});

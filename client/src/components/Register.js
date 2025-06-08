@@ -19,6 +19,8 @@ import api from "../api";
 import { useAuth } from "../Context/AuthContext";
 import { useTranslation } from "../hooks/useTranslation";
 import { useNavigate } from "react-router-dom";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { InputAdornment } from "@mui/material";
 
 const Register = () => {
   const { t } = useTranslation();
@@ -39,6 +41,9 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [resendMessage, setResendMessage] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -222,7 +227,7 @@ const Register = () => {
 
               <TextField
                 label={t("register.password")}
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) =>
                   setPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
@@ -231,12 +236,25 @@ const Register = () => {
                 helperText={errors.password}
                 fullWidth
                 required
-                InputProps={{ startAdornment: <Lock sx={{ mr: 1 }} /> }}
+                InputProps={{
+                  startAdornment: <Lock sx={{ mr: 1 }} />,
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
 
               <TextField
                 label={t("register.confirmPassword")}
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) =>
                   setConfirmPassword(e.target.value.replace(/[а-яА-Я\s]/g, ""))
@@ -245,7 +263,26 @@ const Register = () => {
                 helperText={errors.confirmPassword}
                 fullWidth
                 required
-                InputProps={{ startAdornment: <Lock sx={{ mr: 1 }} /> }}
+                InputProps={{
+                  startAdornment: <Lock sx={{ mr: 1 }} />,
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle confirm password visibility"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        edge="end"
+                      >
+                        {showConfirmPassword ? (
+                          <VisibilityOff />
+                        ) : (
+                          <Visibility />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
 
               <Button
