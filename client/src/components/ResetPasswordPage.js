@@ -21,7 +21,10 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 
+import { useTranslation } from "../hooks/useTranslation";
+
 const ResetPasswordPage = () => {
+  const { t } = useTranslation();
   const { requestPasswordReset, verifyResetCode, resetPassword } = useAuth();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -40,7 +43,6 @@ const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Ошибки для валидации на фронте
   const [errors, setErrors] = useState({
     email: "",
     code: "",
@@ -50,38 +52,35 @@ const ResetPasswordPage = () => {
 
   const navigate = useNavigate();
 
-  // Валидируем email
+  // Валидации с учетом новой локализации
+
   const validateEmail = (value) => {
-    if (!value) return "Email обязателен";
+    if (!value) return t("resetPassword.emailRequired");
+    if (/[а-яА-Я\s]/.test(value)) return t("errors.email_latin_only"); // здесь можно заменить или расширить локализацию, если нужно
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return "Некорректный email";
+    if (!emailRegex.test(value)) return t("errors.email_invalid");
     return "";
   };
 
-  // Валидируем код (например, длина 6 цифр)
   const validateCode = (value) => {
-    if (!value) return "Код обязателен";
-    if (!/^\d{6}$/.test(value)) return "Код должен состоять из 6 цифр";
+    if (!value) return t("resetPassword.codeRequired");
+    if (!/^\d{6}$/.test(value)) return t("resetPassword.invalidCode");
     return "";
   };
 
-  // Валидируем пароль (минимум 6 символов, без пробелов и кириллицы)
   const validatePassword = (value) => {
-    if (!value) return "Пароль обязателен";
-    if (value.length < 6) return "Пароль должен быть не менее 6 символов";
-    if (/[а-яА-Я\s]/.test(value))
-      return "Пароль не должен содержать кириллицу и пробелы";
+    if (!value) return t("errors.password_required");
+    if (value.length < 6) return t("resetPassword.passwordTooShort");
+    if (/[а-яА-Я\s]/.test(value)) return t("errors.password_latin_only");
+    if (!/[0-9]/.test(value)) return t("errors.password_digit_required");
     return "";
   };
 
-  // Подтверждение пароля
   const validateConfirmPassword = (value) => {
-    if (!value) return "Подтвердите пароль";
-    if (value !== newPassword) return "Пароли не совпадают";
+    if (!value) return t("errors.confirm_password_required");
+    if (value !== newPassword) return t("resetPassword.passwordsDontMatch");
     return "";
   };
-
-  // Обработчики с валидацией
 
   const handleEmailChange = (e) => {
     const val = e.target.value.replace(/[а-яА-Я\s]/g, "");
@@ -90,7 +89,7 @@ const ResetPasswordPage = () => {
   };
 
   const handleCodeChange = (e) => {
-    const val = e.target.value.replace(/\D/g, ""); // только цифры
+    const val = e.target.value.replace(/\D/g, "");
     setCode(val);
     setErrors((prev) => ({ ...prev, code: validateCode(val) }));
   };
@@ -110,7 +109,6 @@ const ResetPasswordPage = () => {
     }));
   };
 
-  // Отправка формы шага 0
   const handleRequestReset = async (e) => {
     e.preventDefault();
 
@@ -128,14 +126,13 @@ const ResetPasswordPage = () => {
     setLoading(false);
 
     if (result.success) {
-      setMessage("Код был отправлен на вашу почту.");
+      setMessage(t("resetPassword.codeSent"));
       setStep(1);
     } else {
-      setError(result.message || "Ошибка при отправке кода.");
+      setError(result.message || t("resetPassword.requestError"));
     }
   };
 
-  // Отправка формы шага 1
   const handleVerifyCode = async (e) => {
     e.preventDefault();
 
@@ -156,15 +153,13 @@ const ResetPasswordPage = () => {
       setResetToken(result.token);
       setStep(2);
     } else {
-      setError(result.message || "Неверный или истёкший код.");
+      setError(result.message || t("resetPassword.invalidCode"));
     }
   };
 
-  // Отправка формы шага 2
   const handleResetPassword = async (e) => {
     e.preventDefault();
 
-    // Валидация паролей
     const newPassError = validatePassword(newPassword);
     const confirmPassError = validateConfirmPassword(confirmPassword);
 
@@ -185,10 +180,10 @@ const ResetPasswordPage = () => {
     setLoading(false);
 
     if (result.success) {
-      setMessage("Пароль успешно обновлён. Перенаправление...");
+      setMessage(t("resetPassword.success"));
       setTimeout(() => navigate("/login"), 2000);
     } else {
-      setError(result.message || "Не удалось сбросить пароль.");
+      setError(result.message || t("resetPassword.resetError"));
     }
   };
 
@@ -211,7 +206,7 @@ const ResetPasswordPage = () => {
         gutterBottom
         sx={{ fontWeight: "bold" }}
       >
-        Восстановление пароля
+        {t("resetPassword.title")}
       </Typography>
 
       {error && (
@@ -230,7 +225,7 @@ const ResetPasswordPage = () => {
           {step === 0 && (
             <>
               <TextField
-                label="Email"
+                label={t("labels.email")}
                 type="email"
                 fullWidth
                 required
@@ -255,7 +250,7 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 sx={{ mt: 2 }}
               >
-                {loading ? "Отправка..." : "Отправить код"}
+                {loading ? t("buttons.sending") : t("resetPassword.sendCode")}
               </Button>
             </>
           )}
@@ -263,7 +258,7 @@ const ResetPasswordPage = () => {
           {step === 1 && (
             <>
               <TextField
-                label="Код из письма"
+                label={t("labels.code_from_email")}
                 type="text"
                 fullWidth
                 required
@@ -288,7 +283,7 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 sx={{ mt: 2 }}
               >
-                {loading ? "Проверка..." : "Подтвердить код"}
+                {loading ? t("buttons.verifying") : t("buttons.confirm_code")}
               </Button>
             </>
           )}
@@ -296,7 +291,7 @@ const ResetPasswordPage = () => {
           {step === 2 && (
             <>
               <TextField
-                label="Новый пароль"
+                label={t("labels.new_password")}
                 type={showPassword ? "text" : "password"}
                 fullWidth
                 required
@@ -325,7 +320,7 @@ const ResetPasswordPage = () => {
                 }}
               />
               <TextField
-                label="Подтвердите пароль"
+                label={t("labels.confirm_password")}
                 type={showConfirmPassword ? "text" : "password"}
                 fullWidth
                 required
@@ -367,7 +362,9 @@ const ResetPasswordPage = () => {
                 disabled={loading}
                 sx={{ mt: 2 }}
               >
-                {loading ? "Сброс..." : "Сбросить пароль"}
+                {loading
+                  ? t("buttons.resetting")
+                  : t("resetPassword.resetButton")}
               </Button>
             </>
           )}

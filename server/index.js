@@ -8,7 +8,10 @@ const fs = require("fs").promises;
 const path = require("path");
 const app = express();
 const cors = require("cors");
-const { sendCodeEmail } = require("./emailServer");
+const {
+  sendCodeEmail,
+  sendPasswordResetSuccessEmail,
+} = require("./emailServer");
 
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
@@ -198,6 +201,8 @@ app.post("/api/auth/verify-email", async (req, res) => {
 });
 app.post("/api/auth/resend-code", async (req, res) => {
   const { email } = req.body;
+  console.log("[RESEND CODE] Request received:", { email });
+
   if (!email)
     return res.status(400).json({ success: false, message: "Email required" });
 
@@ -206,11 +211,13 @@ app.post("/api/auth/resend-code", async (req, res) => {
       email,
     ]);
     const user = result.rows[0];
+    console.log("[RESEND CODE] User lookup:", user);
 
     if (!user)
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
+
     if (user.is_verified)
       return res
         .status(400)
@@ -223,12 +230,14 @@ app.post("/api/auth/resend-code", async (req, res) => {
       "UPDATE users SET verification_code = $1, code_sent_at = $2 WHERE email = $3",
       [code, now, email]
     );
+    console.log("[RESEND CODE] Code updated in DB:", code);
 
-    await sendCodeEmail(email, code, "verification");
+    const emailResult = await sendCodeEmail(email, code, "verification");
+    console.log("[RESEND CODE] Email sent result:", emailResult);
 
     return res.json({ success: true, message: "Verification code resent" });
   } catch (err) {
-    console.error("[RESEND CODE] Error:", err.message);
+    console.error("[RESEND CODE] Error:", err.message, err.stack);
     return res
       .status(500)
       .json({ success: false, message: "Error resending code" });
@@ -236,7 +245,8 @@ app.post("/api/auth/resend-code", async (req, res) => {
 });
 
 app.post("/api/auth/request-password-reset", async (req, res) => {
-  const { email } = req.body;
+  const { email, username } = req.body;
+  console.log("[REQUEST RESET] Request received:", { email });
 
   if (!email) {
     return res.status(400).json({ success: false, message: "Email required" });
@@ -247,6 +257,7 @@ app.post("/api/auth/request-password-reset", async (req, res) => {
       email,
     ]);
     const user = result.rows[0];
+    console.log("[REQUEST RESET] User lookup:", user);
 
     if (!user) {
       return res
@@ -261,15 +272,19 @@ app.post("/api/auth/request-password-reset", async (req, res) => {
       "UPDATE users SET verification_code = $1, code_sent_at = $2 WHERE email = $3",
       [resetCode, now, email]
     );
+    console.log("[REQUEST RESET] Code saved in DB:", resetCode);
 
-    await sendCodeEmail(email, resetCode);
+    const emailResult = await sendCodeEmail(
+      email,
+      resetCode,
+      "reset",
+      username
+    );
+    console.log("[REQUEST RESET] Email send result:", emailResult);
 
-    return res.json({
-      success: true,
-      message: "Reset code sent to email",
-    });
+    return res.json({ success: true, message: "Reset code sent to email" });
   } catch (err) {
-    console.error("[PASSWORD RESET] Error:", err.message);
+    console.error("[REQUEST RESET] Error:", err.message, err.stack);
     return res.status(500).json({
       success: false,
       message: "Error processing password reset",
@@ -278,6 +293,7 @@ app.post("/api/auth/request-password-reset", async (req, res) => {
 });
 app.post("/api/auth/verify-reset-code", async (req, res) => {
   const { email, code } = req.body;
+  console.log("[VERIFY RESET CODE] Request received:", { email, code });
 
   if (!email || !code) {
     return res.status(400).json({
@@ -292,6 +308,7 @@ app.post("/api/auth/verify-reset-code", async (req, res) => {
       [email, code]
     );
     const user = result.rows[0];
+    console.log("[VERIFY RESET CODE] DB match:", user);
 
     if (!user) {
       return res.status(400).json({
@@ -300,10 +317,10 @@ app.post("/api/auth/verify-reset-code", async (req, res) => {
       });
     }
 
-    // Check if code is expired (1 hour validity)
     const codeSentAt = user.code_sent_at;
     const now = new Date();
     const codeAge = (now - new Date(codeSentAt)) / (1000 * 60); // in minutes
+    console.log("[VERIFY RESET CODE] Code age (min):", codeAge);
 
     if (codeAge > 60) {
       return res.status(400).json({
@@ -312,27 +329,26 @@ app.post("/api/auth/verify-reset-code", async (req, res) => {
       });
     }
 
-    // Generate a short-lived reset token
     const resetToken = jwt.sign(
-      { userId: user.user_id, reset: true },
+      { userId: user.user_id, email: user.email, reset: true },
       JWT_SECRET,
-      { expiresIn: "15m" } // Short expiration for security
+      { expiresIn: "15m" }
     );
+    console.log("[VERIFY RESET CODE] Token issued for user:", user.email);
 
-    return res.json({
-      success: true,
-      token: resetToken,
-    });
+    return res.json({ success: true, token: resetToken });
   } catch (err) {
-    console.error("[VERIFY RESET CODE] Error:", err.message);
+    console.error("[VERIFY RESET CODE] Error:", err.message, err.stack);
     return res.status(500).json({
       success: false,
       message: "Error verifying code",
     });
   }
 });
+
 app.post("/api/auth/reset-password", async (req, res) => {
   const { token, newPassword } = req.body;
+  console.log("[RESET PASSWORD] Request received");
 
   if (!token || !newPassword) {
     return res.status(400).json({
@@ -342,8 +358,8 @@ app.post("/api/auth/reset-password", async (req, res) => {
   }
 
   try {
-    // Verify the token
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log("[RESET PASSWORD] Token decoded:", decoded);
 
     if (!decoded.reset) {
       return res.status(400).json({
@@ -352,21 +368,27 @@ app.post("/api/auth/reset-password", async (req, res) => {
       });
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log("[RESET PASSWORD] Password hashed");
 
-    // Update password and clear verification code
     await pool.query(
       "UPDATE users SET password_hash = $1, verification_code = NULL WHERE user_id = $2",
       [hashedPassword, decoded.userId]
     );
+    console.log("[RESET PASSWORD] DB updated for user:", decoded.userId);
+
+    const emailResult = await sendPasswordResetSuccessEmail(
+      decoded.email,
+      decoded.name
+    );
+    console.log("[RESET PASSWORD] Confirmation email sent:", emailResult);
 
     return res.json({
       success: true,
       message: "Password updated successfully",
     });
   } catch (err) {
-    console.error("[RESET PASSWORD] Error:", err.message);
+    console.error("[RESET PASSWORD] Error:", err.message, err.stack);
     if (err.name === "TokenExpiredError") {
       return res.status(400).json({
         success: false,
@@ -379,6 +401,7 @@ app.post("/api/auth/reset-password", async (req, res) => {
     });
   }
 });
+
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   console.log(`[LOGIN] Attempt to login with email: ${email}`);
