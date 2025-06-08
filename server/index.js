@@ -8,7 +8,8 @@ const fs = require("fs").promises;
 const path = require("path");
 const app = express();
 const cors = require("cors");
-const { sendVerificationEmail } = require("./emailServer");
+const { sendCodeEmail } = require("./emailServer");
+
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 //FIXME: вынести
@@ -223,7 +224,7 @@ app.post("/api/auth/resend-code", async (req, res) => {
       [code, now, email]
     );
 
-    await sendVerificationEmail(email, code);
+    await sendCodeEmail(email, code, "verification");
 
     return res.json({ success: true, message: "Verification code resent" });
   } catch (err) {
@@ -231,6 +232,151 @@ app.post("/api/auth/resend-code", async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Error resending code" });
+  }
+});
+
+app.post("/api/auth/request-password-reset", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Email required" });
+  }
+
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
+    const user = result.rows[0];
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const resetCode = generateCode();
+    const now = new Date();
+
+    await pool.query(
+      "UPDATE users SET verification_code = $1, code_sent_at = $2 WHERE email = $3",
+      [resetCode, now, email]
+    );
+
+    await sendCodeEmail(email, resetCode);
+
+    return res.json({
+      success: true,
+      message: "Reset code sent to email",
+    });
+  } catch (err) {
+    console.error("[PASSWORD RESET] Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Error processing password reset",
+    });
+  }
+});
+app.post("/api/auth/verify-reset-code", async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and code required",
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM users WHERE email = $1 AND verification_code = $2",
+      [email, code]
+    );
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid code",
+      });
+    }
+
+    // Check if code is expired (1 hour validity)
+    const codeSentAt = user.code_sent_at;
+    const now = new Date();
+    const codeAge = (now - new Date(codeSentAt)) / (1000 * 60); // in minutes
+
+    if (codeAge > 60) {
+      return res.status(400).json({
+        success: false,
+        message: "Code expired",
+      });
+    }
+
+    // Generate a short-lived reset token
+    const resetToken = jwt.sign(
+      { userId: user.user_id, reset: true },
+      JWT_SECRET,
+      { expiresIn: "15m" } // Short expiration for security
+    );
+
+    return res.json({
+      success: true,
+      token: resetToken,
+    });
+  } catch (err) {
+    console.error("[VERIFY RESET CODE] Error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Error verifying code",
+    });
+  }
+});
+app.post("/api/auth/reset-password", async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Token and new password required",
+    });
+  }
+
+  try {
+    // Verify the token
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (!decoded.reset) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear verification code
+    await pool.query(
+      "UPDATE users SET password_hash = $1, verification_code = NULL WHERE user_id = $2",
+      [hashedPassword, decoded.userId]
+    );
+
+    return res.json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (err) {
+    console.error("[RESET PASSWORD] Error:", err.message);
+    if (err.name === "TokenExpiredError") {
+      return res.status(400).json({
+        success: false,
+        message: "Token expired",
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: "Error resetting password",
+    });
   }
 });
 app.post("/api/auth/login", async (req, res) => {

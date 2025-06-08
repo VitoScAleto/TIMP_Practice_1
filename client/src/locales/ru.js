@@ -78,7 +78,15 @@ export default {
     submit: "Войти",
     loggingIn: "Вход...",
     imageAlt: "Иллюстрация входа",
+    forgotPassword: "Забыли пароль?",
+    resetPasswordTitle: "Сбросить пароль",
+    resetEmailSent:
+      "Инструкции по сбросу пароля отправлены на ваш адрес электронной почты",
+    sendResetLink: "Отправить ссылку для сброса",
+    resetError: "Ошибка отправки ссылки для сброса",
+    cancel: "Отмена",
   },
+
   register: {
     title: "Регистрация",
     username: "Имя пользователя",

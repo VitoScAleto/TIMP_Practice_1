@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./Context/AuthContext";
 import { SettingsProvider } from "./Context/SettingsContext";
+
 import HomePage from "./components/HomePage";
 import SafetyMeasures from "./components/SafetyMeasures";
 import Training from "./components/Training";
@@ -10,18 +11,18 @@ import AuthPage from "./components/AuthPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import QrTicketsPage from "./components/QrTicketsPage";
+import ResetPasswordPage from "./components/ResetPasswordPage";
 
 const AppContent = () => {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
-  if (loading) {
-    return <div>Загрузка...</div>;
-  }
+  if (loading) return <div>Загрузка...</div>;
 
   return (
     <BrowserRouter>
       {isAuthenticated && <Navbar />}
       <Routes>
+        {/* Доступ только для авторизованных */}
         <Route
           path="/"
           element={
@@ -57,12 +58,6 @@ const AppContent = () => {
           }
         />
         <Route
-          path="/auth"
-          element={
-            !isAuthenticated ? <AuthPage /> : <Navigate to="/" replace />
-          }
-        />
-        <Route
           path="/qr-tickets"
           element={
             isAuthenticated ? (
@@ -72,6 +67,26 @@ const AppContent = () => {
             )
           }
         />
+
+        {/* Доступ только для НЕавторизованных */}
+        <Route
+          path="/auth"
+          element={
+            !isAuthenticated ? <AuthPage /> : <Navigate to="/" replace />
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            !isAuthenticated ? (
+              <ResetPasswordPage />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+
+        {/* Редирект на главную при ошибочном пути */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />

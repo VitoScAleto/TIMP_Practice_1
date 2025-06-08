@@ -12,6 +12,10 @@ import {
   Fade,
   IconButton,
   InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { Email, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import api from "../api";
@@ -30,6 +34,10 @@ const Login = () => {
   const [errors, setErrors] = useState({ email: false, password: false });
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [resetError, setResetError] = useState("");
 
   const validate = () => {
     const newErrors = {
@@ -74,6 +82,33 @@ const Login = () => {
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetEmail.trim()) {
+      setResetError(t("login.requiredField"));
+      return;
+    }
+
+    try {
+      setResetError("");
+      setIsLoading(true);
+      const response = await api.post("/auth/request-password-reset", {
+        email: resetEmail,
+      });
+
+      if (response.data.success) {
+        // Переходим на страницу ввода кода и нового пароля
+        navigate(`/reset-password?email=${encodeURIComponent(resetEmail)}`);
+      } else {
+        setResetError(response.data.message || t("login.resetError"));
+      }
+    } catch (error) {
+      console.error("Password reset error:", error);
+      setResetError(error.response?.data?.message || t("login.genericError"));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -159,6 +194,14 @@ const Login = () => {
                 {isLoading ? t("login.loggingIn") : t("login.submit")}
               </Button>
             </Box>
+            <Button
+              onClick={() => navigate("/reset-password")}
+              color="secondary"
+              fullWidth
+              sx={{ mt: 2 }}
+            >
+              {t("login.forgotPassword")}
+            </Button>
           </CardContent>
         </Card>
       </Fade>
