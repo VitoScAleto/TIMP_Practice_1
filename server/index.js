@@ -766,6 +766,151 @@ app.post("/api/auth/logout", (req, res) => {
   res.json({ success: true, message: "Вы вышли из системы" });
 });
 
+app.get(
+  "/api/facilities/:fac_id/events",
+  authenticateToken,
+  async (req, res) => {
+    const { fac_id } = req.params;
+    console.log(
+      `[GET] /api/facilities/${fac_id}/events — Запрос на получение событий для сооружения ${fac_id}`
+    );
+
+    try {
+      console.log("Выполняется запрос к базе для получения событий...");
+      const result = await pool.query(
+        "SELECT * FROM events WHERE fac_id = $1 ORDER BY start_time ASC",
+        [fac_id]
+      );
+      console.log(`Найдено событий: ${result.rows.length}`);
+      res.json(result.rows);
+    } catch (err) {
+      console.error(
+        `[ERROR] Ошибка при получении событий для fac_id=${fac_id}:`,
+        err
+      );
+      res.status(500).json({ message: "Ошибка сервера" });
+    }
+  }
+);
+
+app.get("/api/events/:event_id", authenticateToken, async (req, res) => {
+  const { event_id } = req.params;
+  console.log(`[GET] /api/events/${event_id} — Запрос на получение события`);
+
+  try {
+    console.log(`Ищем событие с ID ${event_id} в базе...`);
+    const result = await pool.query(
+      "SELECT * FROM events WHERE event_id = $1",
+      [event_id]
+    );
+    if (result.rows.length === 0) {
+      console.log(`Событие с ID ${event_id} не найдено`);
+      return res.status(404).json({ message: "Событие не найдено" });
+    }
+    console.log(`Событие с ID ${event_id} найдено`);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(
+      `[ERROR] Ошибка при получении события event_id=${event_id}:`,
+      err
+    );
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
+app.post(
+  "/api/facilities/:fac_id/events",
+  authenticateToken,
+  async (req, res) => {
+    const { fac_id } = req.params;
+    const { name, description, status, safety, start_time, end_time } =
+      req.body;
+    console.log(
+      `[POST] /api/facilities/${fac_id}/events — Создание события`,
+      req.body
+    );
+
+    try {
+      console.log("Вставляем новое событие в базу...");
+      const result = await pool.query(
+        `INSERT INTO events (fac_id, name, description, status, safety, start_time, end_time)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [fac_id, name, description, status, safety, start_time, end_time]
+      );
+      console.log(`Событие создано с ID ${result.rows[0].event_id}`);
+      res.status(201).json(result.rows[0]);
+    } catch (err) {
+      console.error(
+        `[ERROR] Ошибка при создании события для fac_id=${fac_id}:`,
+        err
+      );
+      res.status(500).json({ message: "Ошибка сервера" });
+    }
+  }
+);
+
+app.put("/api/events/:event_id", authenticateToken, async (req, res) => {
+  const { event_id } = req.params;
+  const { name, description, status, safety, start_time, end_time } = req.body;
+  console.log(`[PUT] /api/events/${event_id} — Обновление события`, req.body);
+
+  try {
+    console.log(`Обновляем событие с ID ${event_id}...`);
+    const result = await pool.query(
+      `UPDATE events SET
+         name = $1,
+         description = $2,
+         status = $3,
+         safety = $4,
+         start_time = $5,
+         end_time = $6
+       WHERE event_id = $7
+       RETURNING *`,
+      [name, description, status, safety, start_time, end_time, event_id]
+    );
+
+    if (result.rows.length === 0) {
+      console.log(`Событие с ID ${event_id} не найдено для обновления`);
+      return res.status(404).json({ message: "Событие не найдено" });
+    }
+
+    console.log(`Событие с ID ${event_id} успешно обновлено`);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(
+      `[ERROR] Ошибка при обновлении события event_id=${event_id}:`,
+      err
+    );
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
+app.delete("/api/events/:event_id", authenticateToken, async (req, res) => {
+  const { event_id } = req.params;
+  console.log(`[DELETE] /api/events/${event_id} — Удаление события`);
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM events WHERE event_id = $1 RETURNING *",
+      [event_id]
+    );
+    if (result.rows.length === 0) {
+      console.log(`Событие с ID ${event_id} не найдено для удаления`);
+      return res.status(404).json({ message: "Событие не найдено" });
+    }
+
+    console.log(`Событие с ID ${event_id} успешно удалено`);
+    res.json({ message: "Событие удалено", event: result.rows[0] });
+  } catch (err) {
+    console.error(
+      `[ERROR] Ошибка при удалении события event_id=${event_id}:`,
+      err
+    );
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
 app.get("/api/test", (req, res) => {
   console.log("Test route hit");
   res.json({ message: "Server is working!" });

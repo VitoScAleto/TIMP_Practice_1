@@ -64,7 +64,6 @@ const FacilityList = () => {
     fetchFacilities();
   }, []);
 
-  // Дебаунс для вызова геокодера, зависит от ymaps
   const debounceGeocode = useCallback(
     debounce(async (query) => {
       if (!ymaps) return;
@@ -118,7 +117,6 @@ const FacilityList = () => {
     setAddressSuggestions([]);
   };
 
-  // Добавление / редактирование объекта
   const handleSubmit = async (e) => {
     e.preventDefault();
     const { name, address, latitude, longitude } = formData;
@@ -408,6 +406,35 @@ const FacilityList = () => {
                       Координаты: {facility.latitude.toFixed(6)},{" "}
                       {facility.longitude.toFixed(6)}
                     </Typography>
+
+                    {/* Карта */}
+                    <Box
+                      height={180}
+                      mt={1}
+                      sx={{
+                        position: "relative",
+                        overflow: "hidden",
+                        borderRadius: 1,
+                        "& > div": {
+                          width: "100% !important",
+                          height: "100% !important",
+                        },
+                      }}
+                    >
+                      <Map
+                        defaultState={{
+                          center: [facility.latitude, facility.longitude],
+                          zoom: 13,
+                        }}
+                        width="100%"
+                        height="100%"
+                        options={{ suppressMapOpenBlock: true }}
+                      >
+                        <Placemark
+                          geometry={[facility.latitude, facility.longitude]}
+                        />
+                      </Map>
+                    </Box>
 
                     <Box
                       mt={1}
