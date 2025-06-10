@@ -281,7 +281,7 @@ app.post("/api/auth/register", async (req, res) => {
 
     console.log("[REGISTER] User created with ID:", newUser.rows[0].user_id);
 
-    await sendVerificationEmail(email, code);
+    await sendCodeEmail(email, code);
     console.log("[REGISTER] Verification email sent to:", email);
 
     return res
@@ -919,3 +919,182 @@ app.get("/api/test", (req, res) => {
 app.listen(configServer.port, configServer.listenIP, () => {
   console.log(`Сервер запущен на порту ${configServer.port}`);
 });
+
+// Получить сектора объекта
+app.get(
+  "/api/facilities/:fac_id/sectors",
+  authenticateToken,
+  async (req, res) => {
+    const { fac_id } = req.params;
+    console.log(`[GET] /facilities/${fac_id}/sectors`);
+
+    try {
+      const result = await pool.query(
+        "SELECT * FROM sector WHERE fac_id = $1",
+        [fac_id]
+      );
+      console.log(`[OK] Получено секторов: ${result.rows.length}`);
+      res.json(result.rows);
+    } catch (err) {
+      console.error(`[ERR] Получение секторов:`, err);
+      res.status(500).json({ error: "Ошибка сервера при получении секторов" });
+    }
+  }
+);
+
+// Добавить сектор
+app.post(
+  "/api/facilities/:fac_id/sectors",
+  authenticateToken,
+  async (req, res) => {
+    const { fac_id } = req.params;
+    const { name, capacity, security_level } = req.body;
+    console.log(`[POST] Добавление сектора в объект ${fac_id}`, req.body);
+
+    try {
+      const result = await pool.query(
+        `INSERT INTO sector (fac_id, name, capacity, security_level)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+        [fac_id, name, capacity, security_level]
+      );
+      console.log(`[OK] Сектор добавлен:`, result.rows[0]);
+      res.status(201).json(result.rows[0]);
+    } catch (err) {
+      console.error(`[ERR] Добавление сектора:`, err);
+      res.status(500).json({ error: "Ошибка при добавлении сектора" });
+    }
+  }
+);
+
+// Добавить ряд и места
+app.post(
+  "/api/sectors/:sector_id/rows",
+  authenticateToken,
+  async (req, res) => {
+    const { sector_id } = req.params;
+    const { number, capacity } = req.body;
+    console.log(
+      `[POST] Добавление ряда в сектор ${sector_id}: номер=${number}, вместимость=${capacity}`
+    );
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const totalSeatsResult = await client.query(
+        `SELECT COALESCE(SUM(r.capacity), 0) AS total FROM row r WHERE r.sector_id = $1`,
+        [sector_id]
+      );
+      const totalSeats = totalSeatsResult.rows[0].total;
+
+      const sectorCapacity = await client.query(
+        `SELECT capacity FROM sector WHERE sector_id = $1`,
+        [sector_id]
+      );
+      const sectorCap = sectorCapacity.rows[0].capacity;
+
+      console.log(
+        `[INFO] Суммарно мест до добавления: ${totalSeats}, вместимость сектора: ${sectorCap}`
+      );
+
+      if (totalSeats + capacity > sectorCap) {
+        console.warn(`[WARN] Превышение вместимости сектора`);
+        throw new Error("Превышение вместимости сектора");
+      }
+
+      const rowRes = await client.query(
+        `INSERT INTO row (sector_id, number, capacity)
+       VALUES ($1, $2, $3) RETURNING *`,
+        [sector_id, number, capacity]
+      );
+      const row_id = rowRes.rows[0].row_id;
+
+      console.log(`[OK] Ряд добавлен с ID: ${row_id}, добавляем места...`);
+
+      for (let i = 1; i <= capacity; i++) {
+        await client.query(
+          `INSERT INTO seats (row_id, number) VALUES ($1, $2)`,
+          [row_id, i]
+        );
+      }
+
+      console.log(`[OK] Добавлено ${capacity} мест`);
+      await client.query("COMMIT");
+
+      res.status(201).json(rowRes.rows[0]);
+    } catch (e) {
+      await client.query("ROLLBACK");
+      console.error(`[ERR] Ошибка при добавлении ряда или мест:`, e.message);
+      res.status(400).json({ error: e.message });
+    } finally {
+      client.release();
+    }
+  }
+);
+
+// Добавить места в существующий ряд
+app.post("/api/rows/:row_id/seats", authenticateToken, async (req, res) => {
+  const { row_id } = req.params;
+  const { count } = req.body;
+  console.log(`[POST] Добавление ${count} мест в ряд ${row_id}`);
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (let i = 1; i <= count; i++) {
+      await client.query(`INSERT INTO seats (row_id, number) VALUES ($1, $2)`, [
+        row_id,
+        i,
+      ]);
+    }
+    await client.query("COMMIT");
+    console.log(`[OK] Добавлено ${count} мест в ряд ${row_id}`);
+    res.status(201).json({ success: true, message: "Места добавлены" });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    console.error(`[ERR] Ошибка при добавлении мест:`, e.message);
+    res
+      .status(500)
+      .json({ success: false, message: "Ошибка при добавлении мест" });
+  } finally {
+    client.release();
+  }
+});
+
+// Получить ряды сектора
+app.get("/api/sectors/:sector_id/rows", authenticateToken, async (req, res) => {
+  const { sector_id } = req.params;
+  console.log(`[GET] Получение рядов сектора ${sector_id}`);
+
+  try {
+    const result = await pool.query("SELECT * FROM row WHERE sector_id = $1", [
+      sector_id,
+    ]);
+    console.log(`[OK] Рядов найдено: ${result.rows.length}`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(`[ERR] Получение рядов:`, err);
+    res.status(500).json({ error: "Ошибка при получении рядов" });
+  }
+});
+
+// Получить места по ряду
+app.get("/api/rows/:row_id/seats", authenticateToken, async (req, res) => {
+  const { row_id } = req.params;
+  console.log(`[GET] Получение мест по ряду ${row_id}`);
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM seats WHERE row_id = $1 ORDER BY number ASC",
+      [row_id]
+    );
+    console.log(`[OK] Найдено мест: ${result.rows.length}`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(`[ERR] Получение мест:`, err);
+    res.status(500).json({ error: "Ошибка при получении мест" });
+  }
+});
+
+//====================================//
