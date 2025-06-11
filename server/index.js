@@ -826,27 +826,70 @@ app.post(
     const { fac_id } = req.params;
     const { name, description, status, safety, start_time, end_time } =
       req.body;
+
     console.log(
       `[POST] /api/facilities/${fac_id}/events — Создание события`,
       req.body
     );
 
+    const client = await pool.connect(); // подключаем транзакцию
+
     try {
+      await client.query("BEGIN");
+
+      // 1. Создание события
       console.log("Вставляем новое событие в базу...");
-      const result = await pool.query(
+      const eventResult = await client.query(
         `INSERT INTO events (fac_id, name, description, status, safety, start_time, end_time)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
         [fac_id, name, description, status, safety, start_time, end_time]
       );
-      console.log(`Событие создано с ID ${result.rows[0].event_id}`);
-      res.status(201).json(result.rows[0]);
-    } catch (err) {
-      console.error(
-        `[ERROR] Ошибка при создании события для fac_id=${fac_id}:`,
-        err
+
+      const event = eventResult.rows[0];
+      const event_id = event.event_id;
+      console.log(`Событие создано с ID ${event_id}`);
+
+      // 2. Получаем все seat_id для данного объекта
+      const seatsResult = await client.query(
+        `SELECT s.seat_id
+         FROM seats s
+         JOIN row r ON s.row_id = r.row_id
+         JOIN sector sec ON r.sector_id = sec.sector_id
+         WHERE sec.fac_id = $1`,
+        [fac_id]
       );
+
+      const seatIds = seatsResult.rows.map((row) => row.seat_id);
+
+      // 3. Вставляем билеты
+      if (seatIds.length > 0) {
+        const insertValues = seatIds
+          .map((_, i) => `($1, $${i + 2})`)
+          .join(", ");
+        const insertParams = [event_id, ...seatIds];
+
+        await client.query(
+          `INSERT INTO tickets (event_id, seat_id)
+           VALUES ${insertValues}`,
+          insertParams
+        );
+
+        console.log(
+          `Создано ${seatIds.length} билетов для события ${event_id}`
+        );
+      } else {
+        console.warn("Нет доступных мест для создания билетов");
+      }
+
+      await client.query("COMMIT");
+      res.status(201).json(event);
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error(`[ERROR] Ошибка при создании события и билетов:`, err);
       res.status(500).json({ message: "Ошибка сервера" });
+    } finally {
+      client.release();
     }
   }
 );
