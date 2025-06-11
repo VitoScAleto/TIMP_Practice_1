@@ -27,6 +27,14 @@ app.use(
     credentials: true, // позволяет передавать cookies и заголовки авторизации
   })
 );
+const pool = new Pool({
+  user: configBD.userBD,
+  host: configBD.hostBD,
+  database: configBD.databaseBD,
+  password: configBD.passwordBD,
+  port: configBD.portBD,
+});
+
 app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname, "../client/build")));
@@ -114,13 +122,6 @@ app.post("/api/facilities", authenticateToken, async (req, res) => {
       message: "Ошибка сервера при добавлении объекта",
     });
   }
-});
-const pool = new Pool({
-  user: configBD.userBD,
-  host: configBD.hostBD,
-  database: configBD.databaseBD,
-  password: configBD.passwordBD,
-  port: configBD.portBD,
 });
 
 app.put("/api/facilities/:id", authenticateToken, async (req, res) => {
@@ -756,12 +757,12 @@ app.delete("/api/delete/feedback/:id", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/api/auth/logout", (req, res) => {
+app.post("/api/auth/logout", authenticateToken, (req, res) => {
   console.log("LOGOUT CALLED");
   res.clearCookie("token", {
     httpOnly: true,
     sameSite: "Lax",
-    secure: false,
+    secure: production,
   });
   res.json({ success: true, message: "Вы вышли из системы" });
 });
@@ -998,10 +999,10 @@ app.post(
         `[INFO] Суммарно мест до добавления: ${totalSeats}, вместимость сектора: ${sectorCap}`
       );
 
-      if (totalSeats + capacity > sectorCap) {
-        console.warn(`[WARN] Превышение вместимости сектора`);
-        throw new Error("Превышение вместимости сектора");
-      }
+      // if (totalSeats + capacity > sectorCap) {
+      // console.warn(`[WARN] Превышение вместимости сектора`);
+      //   throw new Error("Превышение вместимости сектора");
+      // }
 
       const rowRes = await client.query(
         `INSERT INTO row (sector_id, number, capacity)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import api from "../../api";
 import {
   Container,
@@ -16,7 +16,7 @@ import {
   Box,
 } from "@mui/material";
 
-// 🔧 Компонент отдельного места
+// Компонент отдельного места
 const Seat = ({ seat }) => (
   <Box
     sx={{
@@ -24,7 +24,7 @@ const Seat = ({ seat }) => (
       height: 24,
       borderRadius: "50%",
       backgroundColor: seat.is_occupied ? "#f44336" : "#4caf50",
-      color: "white",
+      color: "#fff",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -42,21 +42,18 @@ const Seat = ({ seat }) => (
   </Box>
 );
 
-// 🔁 Компонент отображения одного ряда
+// Компонент ряда с эффектом перспективы
 const RowView = ({ row, totalRows, seats }) => {
-  const getRowStyle = (rowNumber) => {
-    const curveIntensity = 0.5;
-    const distance = Math.abs(rowNumber - totalRows / 2);
-    return {
-      transform: `perspective(600px) rotateX(${
-        (distance - totalRows / 2) * curveIntensity
-      }deg)`,
-      margin: `${10 - distance * 0.5}px auto`,
-      width: `${100 - distance * 5}%`,
-    };
+  const curveIntensity = 0.5;
+  const distance = Math.abs(row.number - totalRows / 2);
+  const baseTransform = `perspective(600px) rotateX(${
+    (distance - totalRows / 2) * curveIntensity
+  }deg)`;
+  const rowStyle = {
+    transform: baseTransform,
+    margin: `${10 - distance * 0.5}px auto`,
+    width: `${100 - distance * 5}%`,
   };
-
-  const rowStyle = getRowStyle(row.number);
 
   return (
     <Box
@@ -68,7 +65,7 @@ const RowView = ({ row, totalRows, seats }) => {
         ...rowStyle,
         transition: "all 0.3s ease",
         "&:hover": {
-          transform: `${rowStyle.transform} scale(1.05)`,
+          transform: `${baseTransform} scale(1.05)`,
         },
       }}
     >
@@ -81,7 +78,7 @@ const RowView = ({ row, totalRows, seats }) => {
   );
 };
 
-// 📦 Компонент сектора
+// Компонент сектора
 const SectorCard = ({ sector, rows, seatsByRow }) => (
   <Card sx={{ my: 3, width: "100%", backgroundColor: "#f5f5f5" }}>
     <CardHeader
@@ -95,7 +92,7 @@ const SectorCard = ({ sector, rows, seatsByRow }) => (
           flexDirection: "column",
           alignItems: "center",
           gap: 1,
-          padding: 2,
+          p: 2,
         }}
       >
         {rows
@@ -113,33 +110,7 @@ const SectorCard = ({ sector, rows, seatsByRow }) => (
   </Card>
 );
 
-// 🏟️ Основной вид стадиона
-const StadiumView = ({ sectors, rowsBySector, seatsByRow }) => (
-  <Box sx={{ mt: 6 }}>
-    <Typography variant="h5" gutterBottom>
-      Структура стадиона
-    </Typography>
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 1,
-        perspective: "1000px",
-      }}
-    >
-      {sectors.map((sector) => (
-        <SectorCard
-          key={sector.sector_id}
-          sector={sector}
-          rows={rowsBySector[sector.sector_id] || []}
-          seatsByRow={seatsByRow}
-        />
-      ))}
-    </Box>
-  </Box>
-);
-
+// Основной компонент страницы
 export default function SectorPage() {
   const [facilities, setFacilities] = useState([]);
   const [selectedFac, setSelectedFac] = useState("");
@@ -157,83 +128,101 @@ export default function SectorPage() {
     capacity: 10,
   });
 
-  // 📦 Загрузка объектов
+  // Загрузка списка объектов
   useEffect(() => {
-    api.get("/facilities").then((res) => setFacilities(res.data));
+    api.get("/facilities").then(({ data }) => setFacilities(data));
   }, []);
 
-  // 📥 Загрузка секторов, рядов и мест
+  // Загрузка секторов, рядов и мест при выборе объекта
   useEffect(() => {
     if (!selectedFac) return;
 
     (async () => {
-      const sectors = (await api.get(`/facilities/${selectedFac}/sectors`))
-        .data;
-      setSectors(sectors);
+      try {
+        const sectors = (await api.get(`/facilities/${selectedFac}/sectors`))
+          .data;
+        setSectors(sectors);
 
-      // Найти доступную букву (A, B, C...)
-      const existingNames = sectors.map((s) => s.name.toUpperCase());
-      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      const nextLetter =
-        alphabet.split("").find((ch) => !existingNames.includes(ch)) || "";
+        // Автоматический подбор следующей буквы для названия сектора
+        const existingNames = sectors.map((s) => s.name.toUpperCase());
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const nextLetter =
+          alphabet.split("").find((ch) => !existingNames.includes(ch)) || "";
+        setNewSector((prev) => ({ ...prev, name: nextLetter }));
 
-      setNewSector((prev) => ({ ...prev, name: nextLetter }));
+        const rowsMap = {};
+        const seatsMap = {};
 
-      const rowsMap = {};
-      const seatsMap = {};
+        for (const sector of sectors) {
+          const rows = (await api.get(`/sectors/${sector.sector_id}/rows`))
+            .data;
+          rowsMap[sector.sector_id] = rows;
 
-      for (let sector of sectors) {
-        const rows = (await api.get(`/sectors/${sector.sector_id}/rows`)).data;
-        rowsMap[sector.sector_id] = rows;
-
-        for (let row of rows) {
-          const seats = (await api.get(`/rows/${row.row_id}/seats`)).data;
-          seatsMap[row.row_id] = seats;
+          for (const row of rows) {
+            const seats = (await api.get(`/rows/${row.row_id}/seats`)).data;
+            seatsMap[row.row_id] = seats;
+          }
         }
-      }
 
-      setRowsBySector(rowsMap);
-      setSeatsByRow(seatsMap);
+        setRowsBySector(rowsMap);
+        setSeatsByRow(seatsMap);
+      } catch (e) {
+        console.error("Ошибка загрузки данных:", e);
+      }
     })();
   }, [selectedFac]);
 
+  // Добавить сектор
   const addSector = async () => {
     try {
-      const res = await api.post(
+      const { data } = await api.post(
         `/facilities/${selectedFac}/sectors`,
         newSector
       );
-      setSectors((prev) => [...prev, res.data]);
+      setSectors((prev) => [...prev, data]);
       setNewSector({ name: "", capacity: 0, security_level: "low" });
     } catch (e) {
       console.error("Ошибка при добавлении сектора:", e);
     }
   };
 
+  // Получить следующий номер ряда для сектора
+  const getNextRowNumber = useCallback(
+    (sector_id) => {
+      const rows = rowsBySector[sector_id] || [];
+      return rows.length === 0 ? 1 : Math.max(...rows.map((r) => r.number)) + 1;
+    },
+    [rowsBySector]
+  );
+
+  // Добавить ряд
   const addRow = async () => {
+    if (!newRow.sector_id) return;
     try {
-      const res = await api.post(`/sectors/${newRow.sector_id}/rows`, newRow);
+      const { data: rowData } = await api.post(
+        `/sectors/${newRow.sector_id}/rows`,
+        {
+          number: newRow.number,
+          capacity: newRow.capacity,
+        }
+      );
+
+      // Обновляем ряды
       setRowsBySector((prev) => ({
         ...prev,
-        [newRow.sector_id]: [...(prev[newRow.sector_id] || []), res.data],
+        [newRow.sector_id]: [...(prev[newRow.sector_id] || []), rowData],
       }));
 
-      // Обновить места для нового ряда
-      const seats = (await api.get(`/rows/${res.data.row_id}/seats`)).data;
-      setSeatsByRow((prev) => ({
-        ...prev,
-        [res.data.row_id]: seats,
-      }));
+      // Получаем места для нового ряда
+      const seats = (await api.get(`/rows/${rowData.row_id}/seats`)).data;
+      setSeatsByRow((prev) => ({ ...prev, [rowData.row_id]: seats }));
 
-      setNewRow({ ...newRow, number: newRow.number + 1 });
+      // Сбрасываем форму добавления ряда
+      setNewRow({ sector_id: "", number: 1, capacity: 10 });
     } catch (e) {
       console.error("Ошибка при добавлении ряда:", e);
+      alert(`Ошибка: ${e.response?.data?.error || e.message}`);
     }
-  };
-  const getNextRowNumber = (sector_id) => {
-    const rows = rowsBySector[sector_id] || [];
-    if (rows.length === 0) return 1;
-    return Math.max(...rows.map((r) => r.number)) + 1;
   };
 
   return (
@@ -242,6 +231,7 @@ export default function SectorPage() {
         Управление стадионом
       </Typography>
 
+      {/* Выбор объекта */}
       <FormControl fullWidth sx={{ mb: 4 }}>
         <InputLabel>Выберите объект</InputLabel>
         <Select
@@ -249,172 +239,165 @@ export default function SectorPage() {
           onChange={(e) => setSelectedFac(e.target.value)}
           label="Выберите объект"
         >
-          {facilities.map((f) => (
-            <MenuItem key={f.fac_id} value={f.fac_id}>
-              {f.name}
+          {facilities.map(({ fac_id, name }) => (
+            <MenuItem key={fac_id} value={fac_id}>
+              {name}
             </MenuItem>
           ))}
         </Select>
       </FormControl>
 
       {selectedFac && (
-        <>
-          <Grid container spacing={4}>
-            {/* Блок добавления сектора */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardHeader title="Добавить сектор" />
-                <CardContent>
-                  <TextField
-                    label="Название (A, B...)"
-                    fullWidth
-                    sx={{ mb: 2 }}
-                    value={newSector.name}
+        <Grid container spacing={4}>
+          {/* Добавление сектора */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardHeader title="Добавить сектор" />
+              <CardContent>
+                <TextField
+                  label="Название (A, B...)"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  value={newSector.name}
+                  onChange={(e) =>
+                    setNewSector((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                />
+                <TextField
+                  type="number"
+                  label="Вместимость"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  inputProps={{ min: 1 }}
+                  value={newSector.capacity}
+                  onChange={(e) =>
+                    setNewSector((prev) => ({
+                      ...prev,
+                      capacity: +e.target.value,
+                    }))
+                  }
+                />
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Уровень безопасности</InputLabel>
+                  <Select
+                    value={newSector.security_level}
+                    label="Уровень безопасности"
                     onChange={(e) =>
-                      setNewSector({ ...newSector, name: e.target.value })
+                      setNewSector((prev) => ({
+                        ...prev,
+                        security_level: e.target.value,
+                      }))
                     }
-                  />
-                  <TextField
-                    type="number"
-                    inputProps={{ min: 1 }}
-                    label="Вместимость"
-                    fullWidth
-                    sx={{ mb: 2 }}
-                    value={newSector.capacity}
-                    onChange={(e) =>
-                      setNewSector({ ...newSector, capacity: +e.target.value })
-                    }
-                  />
-                  <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel>Уровень безопасности</InputLabel>
-                    <Select
-                      value={newSector.security_level}
-                      label="Уровень безопасности"
-                      onChange={(e) =>
-                        setNewSector({
-                          ...newSector,
-                          security_level: e.target.value,
-                        })
-                      }
-                    >
-                      <MenuItem value="low">low</MenuItem>
-                      <MenuItem value="medius">medius</MenuItem>
-                      <MenuItem value="high">high</MenuItem>
-                      <MenuItem value="critical">critical</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={addSector}
-                    disabled={!newSector.name}
                   >
-                    Добавить сектор
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Блок добавления ряда */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardHeader title="Добавить ряд" />
-                <CardContent>
-                  <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel>Сектор</InputLabel>
-                    <Select
-                      value={newRow.sector_id}
-                      label="Сектор"
-                      onChange={(e) => {
-                        const sector_id = e.target.value;
-                        setNewRow((prev) => ({
-                          ...prev,
-                          sector_id,
-                          number: getNextRowNumber(sector_id),
-                        }));
-                      }}
-                    >
-                      {sectors.map((s) => (
-                        <MenuItem key={s.sector_id} value={s.sector_id}>
-                          {s.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <TextField
-                    type="number"
-                    label="Номер ряда"
-                    fullWidth
-                    sx={{ mb: 2 }}
-                    value={newRow.number}
-                    onChange={(e) =>
-                      setNewRow({ ...newRow, number: +e.target.value })
-                    }
-                  />
-
-                  <TextField
-                    type="number"
-                    label="Вместимость"
-                    fullWidth
-                    sx={{ mb: 2 }}
-                    value={newRow.capacity}
-                    onChange={(e) =>
-                      setNewRow({ ...newRow, capacity: +e.target.value })
-                    }
-                  />
-
-                  <Button
-                    variant="contained"
-                    color="success"
-                    fullWidth
-                    onClick={async () => {
-                      try {
-                        const res = await api.post(
-                          `/sectors/${newRow.sector_id}/rows`,
-                          {
-                            number: newRow.number,
-                            capacity: newRow.capacity,
-                          }
-                        );
-
-                        // Задержка для гарантии завершения seat вставки
-                        await new Promise((r) => setTimeout(r, 200));
-
-                        const newSeats = (
-                          await api.get(`/rows/${res.data.row_id}/seats`)
-                        ).data;
-
-                        // Обновление состояний, например rowsBySector и seatsByRow
-                        setRowsBySector((prev) => ({
-                          ...prev,
-                          [newRow.sector_id]: [
-                            ...(prev[newRow.sector_id] || []),
-                            res.data,
-                          ],
-                        }));
-                        setSeatsByRow((prev) => ({
-                          ...prev,
-                          [res.data.row_id]: newSeats,
-                        }));
-
-                        setNewRow({ sector_id: "", number: 1, capacity: 10 });
-                      } catch (e) {
-                        console.error("Ошибка при добавлении ряда:", e);
-                        alert(
-                          `Ошибка: ${e.response?.data?.error || e.message}`
-                        );
-                      }
-                    }}
-                    disabled={!newRow.sector_id}
-                  >
-                    Добавить ряд
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+                    <MenuItem value="low">low</MenuItem>
+                    <MenuItem value="medius">medius</MenuItem>
+                    <MenuItem value="high">high</MenuItem>
+                    <MenuItem value="critical">critical</MenuItem>
+                  </Select>
+                </FormControl>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={addSector}
+                  disabled={!newSector.name}
+                >
+                  Добавить сектор
+                </Button>
+              </CardContent>
+            </Card>
           </Grid>
-        </>
+
+          {/* Добавление ряда */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardHeader title="Добавить ряд" />
+              <CardContent>
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                  <InputLabel>Сектор</InputLabel>
+                  <Select
+                    value={newRow.sector_id}
+                    label="Сектор"
+                    onChange={(e) => {
+                      const sector_id = e.target.value;
+                      setNewRow((prev) => ({
+                        ...prev,
+                        sector_id,
+                        number: getNextRowNumber(sector_id),
+                      }));
+                    }}
+                  >
+                    {sectors.map(({ sector_id, name }) => (
+                      <MenuItem key={sector_id} value={sector_id}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  type="number"
+                  label="Номер ряда"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  value={newRow.number}
+                  onChange={(e) =>
+                    setNewRow((prev) => ({ ...prev, number: +e.target.value }))
+                  }
+                  inputProps={{ min: 1 }}
+                />
+                <TextField
+                  type="number"
+                  label="Вместимость"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  value={newRow.capacity}
+                  onChange={(e) =>
+                    setNewRow((prev) => ({
+                      ...prev,
+                      capacity: +e.target.value,
+                    }))
+                  }
+                  inputProps={{ min: 1 }}
+                />
+                <Button
+                  variant="contained"
+                  color="success"
+                  fullWidth
+                  onClick={addRow}
+                  disabled={!newRow.sector_id}
+                >
+                  Добавить ряд
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Отображение структуры стадиона */}
+          <Grid item xs={12}>
+            <Box sx={{ mt: 6 }}>
+              <Typography variant="h5" gutterBottom>
+                Структура стадиона
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                  perspective: "1000px",
+                }}
+              >
+                {sectors.map((sector) => (
+                  <SectorCard
+                    key={sector.sector_id}
+                    sector={sector}
+                    rows={rowsBySector[sector.sector_id] || []}
+                    seatsByRow={seatsByRow}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </Grid>
+        </Grid>
       )}
     </Container>
   );
