@@ -99,8 +99,60 @@ const sendPasswordResetSuccessEmail = async (email, name = "User") => {
     return false;
   }
 };
+const sendTicketEmail = async (
+  email,
+  name,
+  event,
+  seatNumber,
+  qrCodeDataURL
+) => {
+  const mailOptions = {
+    from: `"Your App" <vitalya1markovchi@yandex.ru>`,
+    to: email,
+    subject: `🎟 Ваш билет на мероприятие: ${event.name}`,
+    text:
+      `Здравствуйте, ${name}!\n\n` +
+      `Вы успешно приобрели билет на мероприятие "${event.name}".\n` +
+      `Сектор: ${seatNumber.sector}\n` +
+      `Место: ряд ${seatNumber.row}, место ${seatNumber.seat}\n\n` +
+      `Ваш QR-код прилагается ниже.\n\nСпасибо, что выбрали нас!`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+        <h2 style="text-align:center;">🎟 Ваш билет на "${event.name}"</h2>
+        <p>Здравствуйте, <strong>${name}</strong>!</p>
+        <p>Вы приобрели билет:</p>
+        <ul>
+          <li><strong>Мероприятие:</strong> ${event.name}</li>
+          <li><strong>Дата:</strong> ${new Date(
+            event.start_time
+          ).toLocaleString()}</li>
+          <li><strong>Сектор:</strong> ${seatNumber.sector}</li>
+          <li><strong>Место:</strong> ряд ${seatNumber.row}, место ${
+      seatNumber.seat
+    }</li>
+        </ul>
+        <p>Ваш QR-код для входа:</p>
+        <div style="text-align:center; margin: 20px 0;">
+          <img src="${qrCodeDataURL}" alt="QR Code" style="max-width: 200px;" />
+        </div>
+        <p style="color: #555;">📩 Не удаляйте это письмо — вы можете показать этот QR-код на входе.</p>
+        <hr />
+        <p style="font-size: 12px; color: #888;">Спасибо, что выбрали нас!<br/>Команда Your App</p>
+      </div>
+    `,
+  };
 
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL] Ticket sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error(`[EMAIL] Error sending ticket to ${email}:`, error);
+    return false;
+  }
+};
 module.exports = {
   sendCodeEmail,
   sendPasswordResetSuccessEmail,
+  sendTicketEmail,
 };

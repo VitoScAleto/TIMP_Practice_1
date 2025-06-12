@@ -11,8 +11,9 @@ const cors = require("cors");
 const {
   sendCodeEmail,
   sendPasswordResetSuccessEmail,
+  sendTicketEmail,
 } = require("./emailServer");
-
+const QRCode = require("qrcode");
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 //FIXME: вынести
@@ -63,26 +64,6 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
-app.get("/api/facilities", async (req, res) => {
-  console.log(
-    "[GET /api/facilities] Запрос на получение списка спортивных сооружений"
-  );
-  try {
-    const result = await pool.query(
-      "SELECT * FROM sportfacilities ORDER BY fac_id ASC"
-    );
-    console.log(
-      `[GET /api/facilities] Успешно получено ${result.rowCount} объектов`
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error("[GET /api/facilities] Ошибка при получении объектов:", err);
-    res.status(500).json({
-      success: false,
-      message: "Ошибка сервера при получении объектов",
-    });
-  }
-});
 
 // --- Защищённый роут: добавление нового спортивного сооружения (требуется авторизация) ---
 app.post("/api/facilities", authenticateToken, async (req, res) => {
@@ -766,53 +747,36 @@ app.post("/api/auth/logout", authenticateToken, (req, res) => {
   });
   res.json({ success: true, message: "Вы вышли из системы" });
 });
-
-app.get(
-  "/api/facilities/:fac_id/events",
-  authenticateToken,
-  async (req, res) => {
-    const { fac_id } = req.params;
-    console.log(
-      `[GET] /api/facilities/${fac_id}/events — Запрос на получение событий для сооружения ${fac_id}`
-    );
-
-    try {
-      console.log("Выполняется запрос к базе для получения событий...");
-      const result = await pool.query(
-        "SELECT * FROM events WHERE fac_id = $1 ORDER BY start_time ASC",
-        [fac_id]
-      );
-      console.log(`Найдено событий: ${result.rows.length}`);
-      res.json(result.rows);
-    } catch (err) {
-      console.error(
-        `[ERROR] Ошибка при получении событий для fac_id=${fac_id}:`,
-        err
-      );
-      res.status(500).json({ message: "Ошибка сервера" });
-    }
-  }
-);
-
-app.get("/api/events/:event_id", authenticateToken, async (req, res) => {
+app.put("/api/events/:event_id", authenticateToken, async (req, res) => {
   const { event_id } = req.params;
-  console.log(`[GET] /api/events/${event_id} — Запрос на получение события`);
+  const { name, description, status, safety, start_time, end_time } = req.body;
+  console.log(`[PUT] /api/events/${event_id} — Обновление события`, req.body);
 
   try {
-    console.log(`Ищем событие с ID ${event_id} в базе...`);
+    console.log(`Обновляем событие с ID ${event_id}...`);
     const result = await pool.query(
-      "SELECT * FROM events WHERE event_id = $1",
-      [event_id]
+      `UPDATE events SET
+         name = $1,
+         description = $2,
+         status = $3,
+         safety = $4,
+         start_time = $5,
+         end_time = $6
+       WHERE event_id = $7
+       RETURNING *`,
+      [name, description, status, safety, start_time, end_time, event_id]
     );
+
     if (result.rows.length === 0) {
-      console.log(`Событие с ID ${event_id} не найдено`);
+      console.log(`Событие с ID ${event_id} не найдено для обновления`);
       return res.status(404).json({ message: "Событие не найдено" });
     }
-    console.log(`Событие с ID ${event_id} найдено`);
+
+    console.log(`Событие с ID ${event_id} успешно обновлено`);
     res.json(result.rows[0]);
   } catch (err) {
     console.error(
-      `[ERROR] Ошибка при получении события event_id=${event_id}:`,
+      `[ERROR] Ошибка при обновлении события event_id=${event_id}:`,
       err
     );
     res.status(500).json({ message: "Ошибка сервера" });
@@ -820,6 +784,7 @@ app.get("/api/events/:event_id", authenticateToken, async (req, res) => {
 });
 
 app.post(
+  //создание билетов и событий
   "/api/facilities/:fac_id/events",
   authenticateToken,
   async (req, res) => {
@@ -894,42 +859,6 @@ app.post(
   }
 );
 
-app.put("/api/events/:event_id", authenticateToken, async (req, res) => {
-  const { event_id } = req.params;
-  const { name, description, status, safety, start_time, end_time } = req.body;
-  console.log(`[PUT] /api/events/${event_id} — Обновление события`, req.body);
-
-  try {
-    console.log(`Обновляем событие с ID ${event_id}...`);
-    const result = await pool.query(
-      `UPDATE events SET
-         name = $1,
-         description = $2,
-         status = $3,
-         safety = $4,
-         start_time = $5,
-         end_time = $6
-       WHERE event_id = $7
-       RETURNING *`,
-      [name, description, status, safety, start_time, end_time, event_id]
-    );
-
-    if (result.rows.length === 0) {
-      console.log(`Событие с ID ${event_id} не найдено для обновления`);
-      return res.status(404).json({ message: "Событие не найдено" });
-    }
-
-    console.log(`Событие с ID ${event_id} успешно обновлено`);
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(
-      `[ERROR] Ошибка при обновлении события event_id=${event_id}:`,
-      err
-    );
-    res.status(500).json({ message: "Ошибка сервера" });
-  }
-});
-
 app.delete("/api/events/:event_id", authenticateToken, async (req, res) => {
   const { event_id } = req.params;
   console.log(`[DELETE] /api/events/${event_id} — Удаление события`);
@@ -963,28 +892,6 @@ app.get("/api/test", (req, res) => {
 app.listen(configServer.port, configServer.listenIP, () => {
   console.log(`Сервер запущен на порту ${configServer.port}`);
 });
-
-// Получить сектора объекта
-app.get(
-  "/api/facilities/:fac_id/sectors",
-  authenticateToken,
-  async (req, res) => {
-    const { fac_id } = req.params;
-    console.log(`[GET] /facilities/${fac_id}/sectors`);
-
-    try {
-      const result = await pool.query(
-        "SELECT * FROM sector WHERE fac_id = $1",
-        [fac_id]
-      );
-      console.log(`[OK] Получено секторов: ${result.rows.length}`);
-      res.json(result.rows);
-    } catch (err) {
-      console.error(`[ERR] Получение секторов:`, err);
-      res.status(500).json({ error: "Ошибка сервера при получении секторов" });
-    }
-  }
-);
 
 // Добавить сектор
 app.post(
@@ -1076,7 +983,7 @@ app.post(
     }
   }
 );
-
+/*
 // Добавить места в существующий ряд
 app.post("/api/rows/:row_id/seats", authenticateToken, async (req, res) => {
   const { row_id } = req.params;
@@ -1105,6 +1012,82 @@ app.post("/api/rows/:row_id/seats", authenticateToken, async (req, res) => {
     client.release();
   }
 });
+*/
+/////=========================================================
+
+app.get(
+  "/api/facilities/:fac_id/events",
+  authenticateToken,
+  async (req, res) => {
+    const { fac_id } = req.params;
+    console.log(
+      `[GET] /api/facilities/${fac_id}/events — Запрос на получение событий для сооружения ${fac_id}`
+    );
+
+    try {
+      console.log("Выполняется запрос к базе для получения событий...");
+      const result = await pool.query(
+        "SELECT * FROM events WHERE fac_id = $1 ORDER BY start_time ASC",
+        [fac_id]
+      );
+      console.log(`Найдено событий: ${result.rows.length}`);
+      res.json(result.rows);
+    } catch (err) {
+      console.error(
+        `[ERROR] Ошибка при получении событий для fac_id=${fac_id}:`,
+        err
+      );
+      res.status(500).json({ message: "Ошибка сервера" });
+    }
+  }
+);
+
+app.get("/api/events/:event_id", authenticateToken, async (req, res) => {
+  const { event_id } = req.params;
+  console.log(`[GET] /api/events/${event_id} — Запрос на получение события`);
+
+  try {
+    console.log(`Ищем событие с ID ${event_id} в базе...`);
+    const result = await pool.query(
+      "SELECT * FROM events WHERE event_id = $1",
+      [event_id]
+    );
+    if (result.rows.length === 0) {
+      console.log(`Событие с ID ${event_id} не найдено`);
+      return res.status(404).json({ message: "Событие не найдено" });
+    }
+    console.log(`Событие с ID ${event_id} найдено`);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(
+      `[ERROR] Ошибка при получении события event_id=${event_id}:`,
+      err
+    );
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
+// Получить сектора объекта
+app.get(
+  "/api/facilities/:fac_id/sectors",
+  authenticateToken,
+  async (req, res) => {
+    const { fac_id } = req.params;
+    console.log(`[GET] /facilities/${fac_id}/sectors`);
+
+    try {
+      const result = await pool.query(
+        "SELECT * FROM sector WHERE fac_id = $1",
+        [fac_id]
+      );
+      console.log(`[OK] Получено секторов: ${result.rows.length}`);
+      res.json(result.rows);
+    } catch (err) {
+      console.error(`[ERR] Получение секторов:`, err);
+      res.status(500).json({ error: "Ошибка сервера при получении секторов" });
+    }
+  }
+);
 
 // Получить ряды сектора
 app.get("/api/sectors/:sector_id/rows", authenticateToken, async (req, res) => {
@@ -1140,5 +1123,158 @@ app.get("/api/rows/:row_id/seats", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Ошибка при получении мест" });
   }
 });
-
+app.get("/api/facilities", async (req, res) => {
+  console.log(
+    "[GET /api/facilities] Запрос на получение списка спортивных сооружений"
+  );
+  try {
+    const result = await pool.query(
+      "SELECT * FROM sportfacilities ORDER BY fac_id ASC"
+    );
+    console.log(
+      `[GET /api/facilities] Успешно получено ${result.rowCount} объектов`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[GET /api/facilities] Ошибка при получении объектов:", err);
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при получении объектов",
+    });
+  }
+});
 //====================================//
+app.get("/api/tickets", authenticateToken, async (req, res) => {
+  const { event_id } = req.query;
+  if (!event_id) {
+    return res.status(400).json({ message: "event_id обязателен" });
+  }
+
+  try {
+    const query = `
+      SELECT
+        t.ticket_id,
+        t.event_id,
+        t.seat_id,
+        t.user_id,
+        t.status,
+        t.buy_time,
+        s.number AS seat_number,
+        r.row_id,
+        r.number AS row_number,
+        sec.sector_id,
+        sec.name AS sector_name
+      FROM tickets t
+      JOIN seats s ON t.seat_id = s.seat_id
+      JOIN row r ON s.row_id = r.row_id
+      JOIN sector sec ON r.sector_id = sec.sector_id
+      WHERE t.event_id = $1
+      ORDER BY sec.name, r.number, s.number
+    `;
+
+    const result = await pool.query(query, [event_id]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Ошибка при получении билетов:", err);
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
+/// билеты
+
+app.put("/api/tickets/buy", authenticateToken, async (req, res) => {
+  const { event_id, seat_id, qr_data = {} } = req.body;
+  const user_id = req.user.userId;
+
+  console.log(
+    `[BUY_TICKET] User ${user_id} attempts to buy ticket for event ${event_id}, seat ${seat_id}`
+  );
+
+  if (!event_id || !seat_id) {
+    console.warn("[BUY_TICKET] Missing event_id or seat_id in request body");
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing event_id or seat_id" });
+  }
+
+  try {
+    // Получение информации о пользователе и событии
+    const userRes = await pool.query(
+      "SELECT email, username FROM users WHERE user_id = $1",
+      [user_id]
+    );
+    const eventRes = await pool.query(
+      "SELECT * FROM events WHERE event_id = $1",
+      [event_id]
+    );
+    const seatInfo = await pool.query(
+      `SELECT r.number as row, s.number as seat FROM seats s
+       JOIN row r ON s.row_id = r.row_id
+       WHERE s.seat_id = $1`,
+      [seat_id]
+    );
+
+    if (
+      userRes.rows.length === 0 ||
+      eventRes.rows.length === 0 ||
+      seatInfo.rows.length === 0
+    ) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User, event or seat not found" });
+    }
+
+    const { email, username } = userRes.rows[0];
+    const event = eventRes.rows[0];
+    const seatNumber = seatInfo.rows[0];
+
+    const qrPayload = {
+      event_id,
+      seat_id,
+      user_id,
+      timestamp: new Date().toISOString(),
+      ...qr_data,
+    };
+
+    console.log("[BUY_TICKET] Generating QR code with payload:", qrPayload);
+
+    const qrCodeDataURL = await QRCode.toDataURL(JSON.stringify(qrPayload));
+
+    console.log("[BUY_TICKET] QR code generated successfully");
+
+    const updateRes = await pool.query(
+      `UPDATE tickets SET user_id = $1, qr_code_data = $2, status = TRUE
+       WHERE event_id = $3 AND seat_id = $4 RETURNING *`,
+      [user_id, { qrCode: qrCodeDataURL, data: qrPayload }, event_id, seat_id]
+    );
+
+    if (updateRes.rows.length === 0) {
+      console.warn(
+        `[BUY_TICKET] Ticket not found for event ${event_id}, seat ${seat_id}`
+      );
+      return res
+        .status(404)
+        .json({ success: false, message: "Ticket not found for updating" });
+    }
+
+    console.log(
+      `[BUY_TICKET] Ticket successfully updated for user ${user_id}:`,
+      updateRes.rows[0]
+    );
+
+    // Отправка email с QR-кодом
+    const emailSent = await sendTicketEmail(
+      email,
+      username,
+      event,
+
+      seatNumber,
+      qrCodeDataURL
+    );
+
+    res.json({ success: true, ticket: updateRes.rows[0], emailSent });
+  } catch (err) {
+    console.error("[BUY_TICKET] Error processing ticket purchase:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});

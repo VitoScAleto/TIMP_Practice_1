@@ -216,8 +216,21 @@ export default function EventPage() {
                     secondary={
                       <>
                         <div>
-                          {new Date(e.start_time).toLocaleString()} —{" "}
-                          {new Date(e.end_time).toLocaleString()}
+                          {new Date(e.start_time).toLocaleString("ru-RU", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          —{" "}
+                          {new Date(e.end_time).toLocaleString("ru-RU", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </div>
                         <div>{e.description}</div>
                       </>
