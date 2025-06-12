@@ -18,9 +18,9 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 //FIXME: вынести
 const jwt = require("jsonwebtoken");
-
 const JWT_SECRET = "secret_key";
 const JWT_EXPIRES_IN = "1d"; // время жизни токена
+
 //FIXME: вынести
 app.use(
   cors({

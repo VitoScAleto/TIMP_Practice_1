@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { Button, Menu, MenuItem, Avatar, Typography, Box } from "@mui/material";
 import SettingsModal from "./Settings";
 import { useAuth } from "../Context/AuthContext";
-
+import { useTranslation } from "../hooks/useTranslation";
 const UserMenu = () => {
   const { user, login, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const [openSettings, setOpenSettings] = useState(false);
-
+  const { t } = useTranslation();
+  const settingsText = t("settingsModal");
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -48,8 +49,10 @@ const UserMenu = () => {
         <MenuItem disabled>
           <Typography variant="subtitle2">{user?.email}</Typography>
         </MenuItem>
-        <MenuItem onClick={handleSettingsOpen}>Настройки</MenuItem>
-        <MenuItem onClick={logout}>Выйти</MenuItem>
+        <MenuItem onClick={handleSettingsOpen}>
+          {settingsText.settings}
+        </MenuItem>
+        <MenuItem onClick={logout}>{settingsText.exit}</MenuItem>
       </Menu>
 
       <SettingsModal open={openSettings} onClose={handleSettingsClose} />

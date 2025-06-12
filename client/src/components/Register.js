@@ -112,7 +112,11 @@ const Register = () => {
       }
     } catch (error) {
       console.error(error);
-      setErrorMessage(t("register.genericError"));
+      const status = error.response?.status || 500;
+      const message =
+        error.response?.data?.message || t("register.genericError");
+
+      navigate("/error", { state: { status, message } });
     } finally {
       setIsLoading(false);
     }
@@ -132,7 +136,11 @@ const Register = () => {
         setResendMessage(response.data.message);
       }
     } catch (error) {
-      setResendMessage(t("register.genericError"));
+      const status = error.response?.status || 500;
+      const message =
+        error.response?.data?.message || t("register.genericError");
+
+      navigate("/error", { state: { status, message } });
     }
   };
 
@@ -170,7 +178,11 @@ const Register = () => {
         );
       }
     } catch (err) {
-      setVerificationError(t("register.verificationFailed"));
+      const status = err.response?.status || 500;
+      const message =
+        err.response?.data?.message || t("register.verificationFailed");
+
+      navigate("/error", { state: { status, message } });
     } finally {
       setIsVerifying(false);
     }

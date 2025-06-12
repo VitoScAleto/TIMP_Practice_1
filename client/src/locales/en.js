@@ -329,7 +329,7 @@ export default {
   ],
   titlePageTraining: "Education and training",
   footer: {
-    name: "Vitaliy Pushkarev",
+    name: "Vitalya Pushkarev",
     email: "Email:",
     education:
       "Novosibirsk State Technical University, Faculty of Automation and Computer Engineering, Specialty: Information Security of Automated Systems, Group: ABs-323",
@@ -394,5 +394,22 @@ export default {
       verifying: "Checking...",
       resetting: "Resetting...",
     },
+  },
+  qr: {
+    title: "QR Ticket Generation",
+
+    sector: "Sector",
+    row: "Row",
+    buy: "Buy Ticket",
+    success: "Ticket successfully purchased!",
+    error: "Error purchasing ticket",
+  },
+  settingsModal: {
+    settings: "Settings",
+    exit: "Exit",
+    profile: "Profile setup",
+    name: "Name",
+    error: "Name cannot be empty",
+    language: "language",
   },
 };

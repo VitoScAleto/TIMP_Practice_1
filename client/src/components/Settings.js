@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import api from "../api";
 import { useAuth } from "../Context/AuthContext";
 import { useSettings } from "../Context/SettingsContext";
+import { useTranslation } from "../hooks/useTranslation";
 
 const style = {
   position: "absolute",
@@ -41,6 +42,8 @@ const SettingsModal = ({ open, onClose }) => {
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { t } = useTranslation();
+  const settingsText = t("settingsModal");
 
   useEffect(() => {
     if (user) {
@@ -66,20 +69,17 @@ const SettingsModal = ({ open, onClose }) => {
       if (response.data.success) {
         const updatedUser = response.data.user;
 
-        // Обновляем данные пользователя
         login({
           user_id: updatedUser.user_id,
           username: updatedUser.username,
           email: updatedUser.email,
         });
 
-        // Обновляем настройки
         updateSettings({
           username: updatedUser.username,
           email: updatedUser.email,
         });
 
-        // Применяем тему и язык
         changeTheme(theme);
         changeLanguage(language);
 
@@ -125,13 +125,13 @@ const SettingsModal = ({ open, onClose }) => {
             >
               <Box sx={style}>
                 <Typography variant="h6" component="h2">
-                  Настройки профиля
+                  {settingsText.profile}
                 </Typography>
                 <Divider sx={{ my: 2 }} />
 
                 <TextField
                   fullWidth
-                  label="Имя"
+                  label={settingsText.name}
                   margin="normal"
                   variant="outlined"
                   value={name}
@@ -140,24 +140,13 @@ const SettingsModal = ({ open, onClose }) => {
                     setError(false);
                   }}
                   error={error}
-                  helperText={error && "Имя не может быть пустым"}
+                  helperText={error && settingsText.error}
                 />
 
                 <FormControl fullWidth margin="normal">
-                  <InputLabel id="theme-select-label">Тема</InputLabel>
-                  <Select
-                    labelId="theme-select-label"
-                    value={theme}
-                    label="Тема"
-                    onChange={handleThemeChange}
-                  >
-                    <MenuItem value="light">Светлая</MenuItem>
-                    <MenuItem value="dark">Темная</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <FormControl fullWidth margin="normal">
-                  <InputLabel id="language-select-label">Язык</InputLabel>
+                  <InputLabel id="language-select-label">
+                    {settingsText.language}
+                  </InputLabel>
                   <Select
                     labelId="language-select-label"
                     value={language}

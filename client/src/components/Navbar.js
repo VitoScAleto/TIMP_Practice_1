@@ -51,7 +51,7 @@ const Navbar = () => {
     { text: t("navbar.training"), to: "/training", icon: null },
     { text: t("navbar.resources"), to: "/resources", icon: null },
     { text: t("navbar.feedback"), to: "/feedback", icon: null },
-    { text: t("navbar.qrTickets"), to: "/qr-tickets", icon: <QrCodeIcon /> },
+    { to: "/qr-tickets", icon: <QrCodeIcon /> },
   ];
 
   // Ссылки для администратора

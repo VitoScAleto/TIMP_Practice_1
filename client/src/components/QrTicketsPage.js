@@ -14,12 +14,17 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import api from "../api";
-
+import { useTranslation } from "../hooks/useTranslation";
+import { useNavigate } from "react-router-dom";
 const QrTicketsPage = () => {
+  const navigate = useNavigate();
   const [facilities, setFacilities] = useState([]);
   const [eventsByFacility, setEventsByFacility] = useState({});
   const [structureByEvent, setStructureByEvent] = useState({});
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  const qrText = t("qr");
+
   const [selectedSeat, setSelectedSeat] = useState({
     eventId: null,
     seatId: null,
@@ -81,6 +86,9 @@ const QrTicketsPage = () => {
       setStructureByEvent(structureMap);
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || t("qr.loadError");
+      navigate("/error", { state: { status, message } });
     } finally {
       setLoading(false);
     }
@@ -109,7 +117,7 @@ const QrTicketsPage = () => {
       if (res.data.success) {
         setSnackbar({
           open: true,
-          message: "Билет успешно куплен!",
+          message: qrText.success,
           severity: "success",
         });
         setSelectedSeat({ eventId: null, seatId: null });
@@ -118,17 +126,15 @@ const QrTicketsPage = () => {
       } else {
         setSnackbar({
           open: true,
-          message: res.data.message || "Ошибка при покупке",
+          message: res.data.message || qrText.error,
           severity: "error",
         });
       }
     } catch (err) {
       console.error("Ошибка при покупке билета:", err);
-      setSnackbar({
-        open: true,
-        message: "Ошибка при покупке билета",
-        severity: "error",
-      });
+      const status = err.response?.status || 500;
+      const message = err.response?.data?.message || qrText.error;
+      navigate("/error", { state: { status, message } });
     } finally {
       setBuying(false);
     }
@@ -144,10 +150,7 @@ const QrTicketsPage = () => {
   return (
     <Box p={4}>
       <Typography variant="h4" gutterBottom>
-        Генерация QR-билетов
-      </Typography>
-      <Typography mb={3}>
-        Здесь будет функционал для создания и отображения QR-кодов для билетов.
+        {qrText.title}
       </Typography>
 
       {facilities.map((fac) => (
@@ -179,13 +182,15 @@ const QrTicketsPage = () => {
                       <Grid item xs={12} sm={6} md={4} key={sector.sector_id}>
                         <Accordion>
                           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography>Сектор {sector.name}</Typography>
+                            <Typography>
+                              {qrText.sector} {sector.name}
+                            </Typography>
                           </AccordionSummary>
                           <AccordionDetails>
                             {rowsBySector[sector.sector_id]?.map((row) => (
                               <Box key={row.row_id} mb={1}>
                                 <Typography variant="subtitle2">
-                                  Ряд {row.number}
+                                  {qrText.row} {row.number}
                                 </Typography>
                                 <Grid container spacing={0.5}>
                                   {seatsByRow[row.row_id]?.map((seat) => {
@@ -256,7 +261,7 @@ const QrTicketsPage = () => {
                       {buying ? (
                         <CircularProgress size={20} color="inherit" />
                       ) : (
-                        "Купить билет"
+                        qrText.buy
                       )}
                     </Button>
                   </Box>

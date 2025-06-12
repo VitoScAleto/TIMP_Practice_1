@@ -408,4 +408,20 @@ export default {
       resetting: "Сброс...",
     },
   },
+  qr: {
+    title: "Генерация QR-билетов",
+
+    sector: "Сектор",
+    row: "Ряд",
+    buy: "Купить билет",
+    success: "Билет успешно куплен!",
+    error: "Ошибка при покупке билета",
+  },
+  settingsModal: {
+    settings: "Настройки",
+    exit: "Выйти",
+    name: "Имя",
+    error: "Имя не может быть пустым",
+    language: "Язык",
+  },
 };

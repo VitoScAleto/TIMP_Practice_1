@@ -67,9 +67,16 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setLoginError(error.response?.data?.message || t("login.genericError"));
-    } finally {
-      setIsLoading(false);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.message || t("login.genericError");
+
+      // Переход на /error с кодом и сообщением
+      navigate("/error", {
+        state: {
+          status,
+          message,
+        },
+      });
     }
   };
 
@@ -98,7 +105,6 @@ const Login = () => {
       });
 
       if (response.data.success) {
-        // Переходим на страницу ввода кода и нового пароля
         navigate(`/reset-password?email=${encodeURIComponent(resetEmail)}`);
       } else {
         setResetError(response.data.message || t("login.resetError"));

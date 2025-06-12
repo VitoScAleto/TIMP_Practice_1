@@ -19,12 +19,13 @@ import api from "../api";
 import { useAuth } from "../Context/AuthContext";
 import { useTranslation } from "../hooks/useTranslation";
 import { styled } from "@mui/material/styles";
+import { useNavigate } from "react-router-dom";
 
 const Feedback = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const feedbackLocales = t("feedback");
-
+  const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [feedbackList, setFeedbackList] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -50,7 +51,10 @@ const Feedback = () => {
         setFeedbackList(adaptedFeedback);
       } catch (error) {
         console.error("Error fetching feedback:", error);
-        setError(feedbackLocales.errorLoading);
+        const status = error.response?.status || 500;
+        const message =
+          error.response?.data?.message || feedbackLocales.errorLoading;
+        navigate("/error", { state: { status, message } });
       } finally {
         setLoading(false);
       }
@@ -83,7 +87,10 @@ const Feedback = () => {
       setMessage("");
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      setError(feedbackLocales.errorLoading);
+      const status = error.response?.status || 500;
+      const message =
+        error.response?.data?.message || feedbackLocales.errorLoading;
+      navigate("/error", { state: { status, message } });
     } finally {
       setLoading(false);
     }
@@ -99,7 +106,10 @@ const Feedback = () => {
       setOpenDialog(false);
     } catch (err) {
       console.error("Error deleting feedback:", err);
-      setError(feedbackLocales.errorLoading);
+      const status = err.response?.status || 500;
+      const message =
+        err.response?.data?.message || feedbackLocales.errorLoading;
+      navigate("/error", { state: { status, message } });
     } finally {
       setLoading(false);
     }

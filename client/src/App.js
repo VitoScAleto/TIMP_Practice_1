@@ -28,6 +28,7 @@ import SectorManager from "./components/admin/SectorPage";
 import AdminMap from "./components/admin/MapPage";
 import OperatorScanner from "./components/operator/OperatorScannerPage";
 import InspectorPage from "./components/inspector/InspectorPage";
+import ErrorPage from "./components/ErrorPage";
 
 const RoleBasedRoute = ({ requiredRole, element, fallbackPath = "/" }) => {
   const { user } = useAuth();
@@ -159,6 +160,7 @@ const AppContent = () => {
         />
 
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/error" element={<ErrorPage />} />
       </Routes>
 
       {!isAdminPath && !isOperatorPath && !isInspectorPath && <Footer />}
