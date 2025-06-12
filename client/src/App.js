@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
   useLocation,
+  Outlet,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./Context/AuthContext";
 import { SettingsProvider } from "./Context/SettingsContext";
@@ -19,19 +20,16 @@ import Footer from "./components/Footer";
 import QrTicketsPage from "./components/QrTicketsPage";
 import ResetPasswordPage from "./components/ResetPasswordPage";
 import AdminPanelMain from "./components/admin/adminPanelMain";
-import OperatorPanel from "./components/operator/operatorPanelMain";
-import InspectorView from "./components/inspector/inspectorPanelMain";
+import OperatorPanelMain from "./components/operator/operatorPanelMain";
+import InspectorPanelMain from "./components/inspector/inspectorPanelMain";
 import FacilityList from "./components/admin/FacilityPage";
 import EventList from "./components/admin/EventPage";
 import SectorManager from "./components/admin/SectorPage";
 import AdminMap from "./components/admin/MapPage";
+import OperatorScanner from "./components/operator/OperatorScannerPage";
+import InspectorPage from "./components/inspector/InspectorPage";
 
-const RoleBasedRoute = ({
-  role,
-  requiredRole,
-  element,
-  fallbackPath = "/",
-}) => {
+const RoleBasedRoute = ({ requiredRole, element, fallbackPath = "/" }) => {
   const { user } = useAuth();
 
   if (user?.role === requiredRole) {
@@ -46,13 +44,16 @@ const AppContent = () => {
 
   if (loading) return <div>Загрузка...</div>;
 
-  // Проверяем, не админский ли это путь
   const isAdminPath = location.pathname.startsWith("/admin");
+  const isOperatorPath = location.pathname.startsWith("/operator");
+  const isInspectorPath = location.pathname.startsWith("/inspector");
 
   return (
     <>
-      {/* Показываем обычный Navbar только если не в админке и если авторизованы */}
-      {!isAdminPath && isAuthenticated && <Navbar />}
+      {!isAdminPath &&
+        !isOperatorPath &&
+        !isInspectorPath &&
+        isAuthenticated && <Navbar />}
 
       <Routes>
         <Route
@@ -65,11 +66,7 @@ const AppContent = () => {
         <Route
           path="/admin"
           element={
-            <RoleBasedRoute
-              requiredRole="admin"
-              element={<AdminPanelMain />}
-              fallbackPath="/"
-            />
+            <RoleBasedRoute requiredRole="admin" element={<AdminPanelMain />} />
           }
         >
           <Route index element={<Navigate to="/admin/facilities" replace />} />
@@ -84,22 +81,27 @@ const AppContent = () => {
           element={
             <RoleBasedRoute
               requiredRole="operator"
-              element={<OperatorPanel />}
-              fallbackPath="/"
+              element={<OperatorPanelMain />}
             />
           }
-        />
+        >
+          <Route index element={<Navigate to="scanner" replace />} />
+          <Route path="scanner" element={<OperatorScanner />} />
+        </Route>
+
         <Route
           path="/inspector"
           element={
             <RoleBasedRoute
               requiredRole="inspector"
-              element={<InspectorView />}
-              fallbackPath="/"
+              element={<InspectorPanelMain />}
             />
           }
-        />
-        {/* Общие маршруты */}
+        >
+          <Route index element={<Navigate to="checks" replace />} />
+          <Route path="checks" element={<InspectorPage />} />
+        </Route>
+
         <Route
           path="/safety-measures"
           element={
@@ -110,7 +112,6 @@ const AppContent = () => {
             )
           }
         />
-
         <Route
           path="/training"
           element={
@@ -160,7 +161,7 @@ const AppContent = () => {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      <Footer />
+      {!isAdminPath && !isOperatorPath && !isInspectorPath && <Footer />}
     </>
   );
 };

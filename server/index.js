@@ -65,7 +65,6 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- Защищённый роут: добавление нового спортивного сооружения (требуется авторизация) ---
 app.post("/api/facilities", authenticateToken, async (req, res) => {
   console.log(
     "[POST /api/facilities] Запрос на добавление нового спортивного сооружения"
@@ -146,7 +145,6 @@ app.put("/api/facilities/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// --- Удаление спортивного сооружения (DELETE /api/facilities/:id) ---
 app.delete("/api/facilities/:id", authenticateToken, async (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -562,7 +560,7 @@ app.post("/api/auth/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: "production",
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
     });
@@ -743,7 +741,7 @@ app.post("/api/auth/logout", authenticateToken, (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     sameSite: "Lax",
-    secure: production,
+    secure: "production",
   });
   res.json({ success: true, message: "Вы вышли из системы" });
 });
@@ -784,7 +782,6 @@ app.put("/api/events/:event_id", authenticateToken, async (req, res) => {
 });
 
 app.post(
-  //создание билетов и событий
   "/api/facilities/:fac_id/events",
   authenticateToken,
   async (req, res) => {
@@ -797,12 +794,11 @@ app.post(
       req.body
     );
 
-    const client = await pool.connect(); // подключаем транзакцию
+    const client = await pool.connect();
 
     try {
       await client.query("BEGIN");
 
-      // 1. Создание события
       console.log("Вставляем новое событие в базу...");
       const eventResult = await client.query(
         `INSERT INTO events (fac_id, name, description, status, safety, start_time, end_time)
@@ -815,7 +811,6 @@ app.post(
       const event_id = event.event_id;
       console.log(`Событие создано с ID ${event_id}`);
 
-      // 2. Получаем все seat_id для данного объекта
       const seatsResult = await client.query(
         `SELECT s.seat_id
          FROM seats s
@@ -827,7 +822,6 @@ app.post(
 
       const seatIds = seatsResult.rows.map((row) => row.seat_id);
 
-      // 3. Вставляем билеты
       if (seatIds.length > 0) {
         const insertValues = seatIds
           .map((_, i) => `($1, $${i + 2})`)
@@ -948,11 +942,6 @@ app.post(
       console.log(
         `[INFO] Суммарно мест до добавления: ${totalSeats}, вместимость сектора: ${sectorCap}`
       );
-
-      // if (totalSeats + capacity > sectorCap) {
-      // console.warn(`[WARN] Превышение вместимости сектора`);
-      //   throw new Error("Превышение вместимости сектора");
-      // }
 
       const rowRes = await client.query(
         `INSERT INTO row (sector_id, number, capacity)
@@ -1143,7 +1132,7 @@ app.get("/api/facilities", async (req, res) => {
     });
   }
 });
-//====================================//
+
 app.get("/api/tickets", authenticateToken, async (req, res) => {
   const { event_id } = req.query;
   if (!event_id) {
@@ -1198,7 +1187,6 @@ app.put("/api/tickets/buy", authenticateToken, async (req, res) => {
   }
 
   try {
-    // Получение информации о пользователе и событии
     const userRes = await pool.query(
       "SELECT email, username FROM users WHERE user_id = $1",
       [user_id]
@@ -1208,8 +1196,10 @@ app.put("/api/tickets/buy", authenticateToken, async (req, res) => {
       [event_id]
     );
     const seatInfo = await pool.query(
-      `SELECT r.number as row, s.number as seat FROM seats s
+      `SELECT r.number AS row, s.number AS seat, sec.name AS sector
+       FROM seats s
        JOIN row r ON s.row_id = r.row_id
+       JOIN sector sec ON r.sector_id = sec.sector_id
        WHERE s.seat_id = $1`,
       [seat_id]
     );
@@ -1232,6 +1222,9 @@ app.put("/api/tickets/buy", authenticateToken, async (req, res) => {
       event_id,
       seat_id,
       user_id,
+      sector: seatNumber.sector,
+      row: seatNumber.row,
+      seat: seatNumber.seat,
       timestamp: new Date().toISOString(),
       ...qr_data,
     };
@@ -1262,12 +1255,10 @@ app.put("/api/tickets/buy", authenticateToken, async (req, res) => {
       updateRes.rows[0]
     );
 
-    // Отправка email с QR-кодом
     const emailSent = await sendTicketEmail(
       email,
       username,
       event,
-
       seatNumber,
       qrCodeDataURL
     );
@@ -1276,5 +1267,140 @@ app.put("/api/tickets/buy", authenticateToken, async (req, res) => {
   } catch (err) {
     console.error("[BUY_TICKET] Error processing ticket purchase:", err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+app.post("/api/tickets/scan", authenticateToken, async (req, res) => {
+  const { qr_code_data } = req.body;
+  if (!qr_code_data) {
+    return res.status(400).json({ message: "qr_code_data is required" });
+  }
+
+  try {
+    const { event_id, seat_id, user_id } = qr_code_data;
+
+    if (!event_id || !seat_id) {
+      return res.status(400).json({ message: "Invalid QR code data" });
+    }
+
+    const ticketRes = await pool.query(
+      `SELECT t.*, e.name AS event_name, e.start_time 
+       FROM tickets t 
+       JOIN events e ON t.event_id = e.event_id 
+       WHERE t.event_id = $1 AND t.seat_id = $2`,
+      [event_id, seat_id]
+    );
+
+    if (ticketRes.rows.length === 0) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    const ticket = ticketRes.rows[0];
+
+    res.json(ticket);
+  } catch (err) {
+    console.error("Error scanning ticket:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post("/api/accesslog", authenticateToken, async (req, res) => {
+  const { ticket_id, access_status } = req.body;
+  const scanned_by = req.user.userId;
+
+  if (typeof ticket_id !== "number" || typeof access_status !== "boolean") {
+    return res.status(400).json({ message: "Invalid input data" });
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO accesslog (ticket_id, scanned_by, access_status) 
+       VALUES ($1, $2, $3)`,
+      [ticket_id, scanned_by, access_status]
+    );
+
+    res.json({ message: "Access log saved" });
+  } catch (err) {
+    console.error("Error logging access:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/api/accesslogs", async (req, res) => {
+  try {
+    console.log(`[ACCESSLOG] Получение access logs...`);
+
+    const result = await pool.query(`
+      SELECT 
+        al.*, 
+        t.event_id, 
+        u.username AS scanned_by_name 
+      FROM accesslog al
+      JOIN tickets t ON al.ticket_id = t.ticket_id
+      JOIN users u ON al.scanned_by = u.user_id
+      ORDER BY scan_time DESC
+    `);
+
+    console.log(`[ACCESSLOG] Получено ${result.rowCount} записей`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[ACCESSLOG] Ошибка при получении accesslog:", err);
+    res.status(500).json({ message: "Ошибка сервера при получении accesslog" });
+  }
+});
+
+app.get("/api/incidents", async (req, res) => {
+  try {
+    console.log("[INCIDENTS] Получение всех инцидентов...");
+
+    const result = await pool.query(`
+      SELECT 
+        i.*, 
+        e.name AS event_name,
+        u.username AS reported_by_name
+      FROM incidents i
+      JOIN events e ON i.event_id = e.event_id
+      JOIN users u ON i.reported_by = u.user_id
+      ORDER BY i.timestamp DESC
+    `);
+
+    console.log(`[INCIDENTS] Получено ${result.rowCount} инцидентов`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[INCIDENTS] Ошибка при получении инцидентов:", err);
+    res.status(500).json({ message: "Ошибка сервера при получении incidents" });
+  }
+});
+
+app.post("/api/incidents", authenticateToken, async (req, res) => {
+  const { event_id, log_id, title, description } = req.body;
+  const reported_by = req.user.userId;
+
+  console.log(
+    `[INCIDENTS] Попытка создания инцидента пользователем ID: ${reported_by}`
+  );
+  console.log(`[INCIDENTS] Данные:`, { event_id, log_id, title, description });
+
+  if (!event_id || !log_id || !title || !description || !reported_by) {
+    console.warn("[INCIDENTS] Не хватает данных для создания инцидента");
+    return res.status(400).json({ message: "Все поля обязательны" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO incidents (
+         event_id, reported_by, log_id, title, description
+       ) VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [event_id, reported_by, log_id, title, description]
+    );
+
+    console.log(
+      `[INCIDENTS] Инцидент создан: ID ${result.rows[0].incident_id}`
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("[INCIDENTS] Ошибка при создании инцидента:", err);
+    res.status(500).json({ message: "Ошибка сервера при создании инцидента" });
   }
 });
