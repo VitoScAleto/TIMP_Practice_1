@@ -29,6 +29,7 @@ import AdminMap from "./components/admin/MapPage";
 import OperatorScanner from "./components/operator/OperatorScannerPage";
 import InspectorPage from "./components/inspector/InspectorPage";
 import ErrorPage from "./components/ErrorPage";
+import PermissionsPage from "./components/admin/AdminPermissions";
 
 const RoleBasedRoute = ({ requiredRole, element, fallbackPath = "/" }) => {
   const { user } = useAuth();
@@ -75,6 +76,7 @@ const AppContent = () => {
           <Route path="events" element={<EventList />} />
           <Route path="sectors" element={<SectorManager />} />
           <Route path="map" element={<AdminMap />} />
+          <Route path="permissions" element={<PermissionsPage />} />
         </Route>
 
         <Route

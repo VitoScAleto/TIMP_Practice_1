@@ -16,37 +16,55 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import api from "../api";
 import { useTranslation } from "../hooks/useTranslation";
 import { useNavigate } from "react-router-dom";
+
 const QrTicketsPage = () => {
   const navigate = useNavigate();
-  const [facilities, setFacilities] = useState([]);
-  const [eventsByFacility, setEventsByFacility] = useState({});
-  const [structureByEvent, setStructureByEvent] = useState({});
-  const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
   const qrText = t("qr");
 
+  const [facilities, setFacilities] = useState([]);
+  const [eventsByFacility, setEventsByFacility] = useState({});
+  const [structureByEvent, setStructureByEvent] = useState({});
   const [selectedSeat, setSelectedSeat] = useState({
     eventId: null,
     seatId: null,
   });
+  const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
-  const [buying, setBuying] = useState(false);
 
   const loadAll = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const facilitiesRes = await api.get("/facilities");
-      const facilitiesData = facilitiesRes.data;
-      setFacilities(facilitiesData);
+      // Получаем текущего пользователя
+      const meRes = await api.get("/auth/me");
+      const userId = meRes.data.user.user_id;
 
+      // Получаем разрешённые сооружения для пользователя
+      const permissionsRes = await api.get(`/users/${userId}/permissions`);
+      const allowedFacilityIds = permissionsRes.data.map(
+        (p) => p.permission_facilities
+      );
+
+      // Получаем список всех сооружений
+      const allFacilitiesRes = await api.get("/facilities");
+      const allFacilities = allFacilitiesRes.data;
+
+      // Фильтруем только разрешённые
+      const allowedFacilities = allFacilities.filter((f) =>
+        allowedFacilityIds.includes(f.fac_id)
+      );
+      setFacilities(allowedFacilities);
+
+      // Загружаем события и структуру только для разрешённых объектов
       const eventsGrouped = {};
       const structureMap = {};
 
-      for (const fac of facilitiesData) {
+      for (const fac of allowedFacilities) {
         const evRes = await api.get(`/facilities/${fac.fac_id}/events`);
         eventsGrouped[fac.fac_id] = evRes.data;
 
@@ -56,13 +74,10 @@ const QrTicketsPage = () => {
             api.get(`/tickets?event_id=${event.event_id}`),
           ]);
 
-          const sectors = sectorsRes.data;
-          const tickets = ticketsRes.data;
-
           const rowsBySector = {};
           const seatsByRow = {};
 
-          for (const sector of sectors) {
+          for (const sector of sectorsRes.data) {
             const rowsRes = await api.get(`/sectors/${sector.sector_id}/rows`);
             rowsBySector[sector.sector_id] = rowsRes.data;
 
@@ -74,20 +89,20 @@ const QrTicketsPage = () => {
 
           structureMap[event.event_id] = {
             event,
-            sectors,
+            sectors: sectorsRes.data,
             rowsBySector,
             seatsByRow,
-            tickets,
+            tickets: ticketsRes.data,
           };
         }
       }
 
       setEventsByFacility(eventsGrouped);
       setStructureByEvent(structureMap);
-    } catch (error) {
-      console.error("Ошибка загрузки данных:", error);
-      const status = error.response?.status || 500;
-      const message = error.response?.data?.message || t("qr.loadError");
+    } catch (err) {
+      console.error("Ошибка при загрузке данных:", err);
+      const status = err.response?.status || 500;
+      const message = err.response?.data?.message || qrText.loadError;
       navigate("/error", { state: { status, message } });
     } finally {
       setLoading(false);
@@ -105,7 +120,6 @@ const QrTicketsPage = () => {
 
   const handleBuyTicket = async () => {
     if (!selectedSeat.seatId || !selectedSeat.eventId) return;
-
     setBuying(true);
     try {
       const res = await api.put("/tickets/buy", {
@@ -131,7 +145,7 @@ const QrTicketsPage = () => {
         });
       }
     } catch (err) {
-      console.error("Ошибка при покупке билета:", err);
+      console.error("Ошибка при покупке:", err);
       const status = err.response?.status || 500;
       const message = err.response?.data?.message || qrText.error;
       navigate("/error", { state: { status, message } });
@@ -140,12 +154,13 @@ const QrTicketsPage = () => {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <Box p={4}>
         <CircularProgress />
       </Box>
     );
+  }
 
   return (
     <Box p={4}>

@@ -5,7 +5,7 @@ const AdminNavbar = () => {
   const navigate = useNavigate();
 
   const handleBackClick = () => {
-    navigate("/"); // или другой путь, куда хочешь возвращаться
+    navigate("/");
   };
 
   return (
@@ -36,14 +36,17 @@ const AdminNavbar = () => {
       <Link to="/admin/facilities" style={{ color: "#fff", marginRight: 20 }}>
         Facilities
       </Link>
-      <Link to="/admin/events" style={{ color: "#fff", marginRight: 20 }}>
-        Events
-      </Link>
       <Link to="/admin/sectors" style={{ color: "#fff", marginRight: 20 }}>
         Sectors
       </Link>
-      <Link to="/admin/map" style={{ color: "#fff" }}>
+      <Link to="/admin/events" style={{ color: "#fff", marginRight: 20 }}>
+        Events
+      </Link>
+      <Link to="/admin/map" style={{ color: "#fff", marginRight: 20 }}>
         Map
+      </Link>
+      <Link to="/admin/permissions" style={{ color: "#fff" }}>
+        Permissions
       </Link>
     </nav>
   );

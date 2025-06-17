@@ -560,7 +560,7 @@ app.post("/api/auth/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: "production",
+      secure: true,
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
     });
@@ -1402,5 +1402,89 @@ app.post("/api/incidents", authenticateToken, async (req, res) => {
   } catch (err) {
     console.error("[INCIDENTS] Ошибка при создании инцидента:", err);
     res.status(500).json({ message: "Ошибка сервера при создании инцидента" });
+  }
+});
+
+///===================разрешения на спортсооружения
+
+app.get("/api/users", authenticateToken, async (req, res) => {
+  console.log("[GET /api/users] Получение списка пользователей");
+
+  try {
+    const result = await pool.query(
+      "SELECT user_id, username, email FROM users ORDER BY user_id ASC"
+    );
+    console.log(`[GET /api/users]  Получено: ${result.rowCount} пользователей`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[GET /api/users]  Ошибка:", err);
+    res.status(500).json({ success: false, message: "Ошибка сервера" });
+  }
+});
+
+app.get("/api/users/:id/permissions", authenticateToken, async (req, res) => {
+  const userId = req.params.id;
+  console.log(`[GET /api/users/${userId}/permissions] Получение разрешений`);
+
+  try {
+    const result = await pool.query(
+      `SELECT p.permission_facilities, f.name 
+       FROM permissions p 
+       JOIN sportfacilities f ON p.permission_facilities = f.fac_id 
+       WHERE p.user_id = $1`,
+      [userId]
+    );
+
+    console.log(
+      `[GET /api/users/${userId}/permissions]  Получено: ${result.rowCount} записей`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(`[GET /api/users/${userId}/permissions]  Ошибка:`, err);
+    res.status(500).json({ success: false, message: "Ошибка сервера" });
+  }
+});
+
+app.post("/api/permissions", authenticateToken, async (req, res) => {
+  const { user_id, fac_id } = req.body;
+
+  console.log(
+    `[POST /api/permissions] Назначение доступа: user_id=${user_id}, fac_id=${fac_id}`
+  );
+
+  if (!user_id || !fac_id) {
+    console.log("[POST /api/permissions]  Отсутствует user_id или fac_id");
+    return res
+      .status(400)
+      .json({ success: false, message: "Необходимы user_id и fac_id" });
+  }
+
+  try {
+    const check = await pool.query(
+      "SELECT * FROM permissions WHERE user_id = $1 AND permission_facilities = $2",
+      [user_id, fac_id]
+    );
+
+    if (check.rows.length > 0) {
+      console.log("[POST /api/permissions]  Доступ уже существует");
+      return res.status(409).json({
+        success: false,
+        message: "Такой доступ уже существует",
+      });
+    }
+
+    await pool.query(
+      "INSERT INTO permissions (user_id, permission_facilities) VALUES ($1, $2)",
+      [user_id, fac_id]
+    );
+
+    console.log("[POST /api/permissions] Доступ успешно добавлен");
+    res.json({ success: true, message: "Доступ успешно назначен" });
+  } catch (err) {
+    console.error("[POST /api/permissions]  Ошибка:", err);
+    res.status(500).json({
+      success: false,
+      message: "Ошибка сервера при назначении доступа",
+    });
   }
 });
